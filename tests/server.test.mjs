@@ -139,8 +139,8 @@ test('the demo export starts a job, so it needs the header like every write', as
   assert.equal((await get('/api/demo-export?fmt=mp3')).status, 403);
 });
 
-test('/soon, the old "coming soon" page, sends people to the setup steps', async () => {
+test('/soon, the old "coming soon" page, sends people to the GitHub repo', async () => {
   const r = await fetch(base + '/soon', { redirect: 'manual' });
   assert.equal(r.status, 301);
-  assert.equal(r.headers.get('location'), '/#setup');
+  assert.equal(r.headers.get('location'), 'https://github.com/kylersimzer/godmix-app');
 });

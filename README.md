@@ -44,7 +44,7 @@ Kyler Simzer's album tool. It makes masters that match on their loud sections an
 - Album cards are drawn from each album's loudness, one arc per song.
 
 **The online demo** (`npm run demo`)
-- The same app, started with `--demo`, for a website: the demo album only, streamed as MP3 320, read-only on the server. Visitors' notes stay in their browser, the buttons say **Try GODMIX**,, and making versions, exports or albums points to the setup steps and the GitHub repo. `python app/build_public.py` makes its files. See [docs/APP.md](docs/APP.md#the-online-demo).
+- The same app, started with `--demo`, for a website: the demo album only, streamed as MP3 320, read-only on the server. Visitors' notes stay in their browser, the buttons say **Try GODMIX**,, and making versions, exports or albums points to the GitHub repo. `python app/build_public.py` makes its files. See [docs/APP.md](docs/APP.md#the-online-demo).
 
 **The scripts** (repo root)
 - `render.py`: masters for the album being mastered (the one with `"masters"` set), as 24-bit/48k and dithered 16-bit/44.1k, with peaks checked after MP3, AAC, Opus and Vorbis encoding.

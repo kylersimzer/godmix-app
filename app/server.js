@@ -7,7 +7,7 @@
 //
 //   GET  /                                   the homepage (web/home.html)
 //   GET  /app                                the app (web/index.html)
-//   GET  /soon                               redirects to /#setup (it was the "coming soon" page before the code was public)
+//   GET  /soon                               redirects to the GitHub repo (it was the "coming soon" page before the code was public)
 //   GET  /css/* /js/* /assets/*              static files from web/
 //   GET  /api/health                         {"ok":true, version, mode: "local" | "demo", albums}
 //   GET  /api/albums                         album list (data/albums.json);  ?cards=1 in demo mode: every released album,
@@ -358,7 +358,7 @@ function handle(req, res, demo) {
   if (req.method === "GET" || req.method === "HEAD") {
     if (p === "/" || p === "/home") return sendPage(req, res, path.join(WEB, "home.html"), demo);
     if (p === "/app" || p === "/app/" || p === "/index.html") return sendPage(req, res, path.join(WEB, "index.html"), demo);
-    if (p === "/soon") return res.writeHead(301, { Location: "/#setup" }).end();
+    if (p === "/soon") return res.writeHead(301, { Location: "https://github.com/kylersimzer/godmix-app" }).end();
     if (p === "/favicon.ico") return sendFile(req, res, path.join(WEB, "assets", "favicon-32.png"), { cache: 86400 });
     if (/^\/(css|js|assets)\//.test(p)) {
       const f = webFile(p.slice(1));

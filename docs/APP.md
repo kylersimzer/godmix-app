@@ -52,7 +52,7 @@ albums.json + local/albums.json ──► app/build_data.py ──► app/data/<
 
 | Method and path | Does |
 |---|---|
-| `GET /`, `GET /app` | Homepage and app. `GET /soon` (the old "coming soon" page) redirects to the homepage's setup steps. |
+| `GET /`, `GET /app` | Homepage and app. `GET /soon` (the old "coming soon" page) redirects to the GitHub repo. |
 | `GET /css/*`, `/js/*`, `/assets/*` | Static files from `app/web/`. Paths can't leave that folder. |
 | `GET /api/health` | `{ok, name, version, mode: "local" \| "demo", albums}`. |
 | `GET /api/albums` | `app/data/albums.json`. In demo mode only the demo, unless `?cards=1` (the homepage's album cards). |
@@ -105,12 +105,12 @@ albums.json + local/albums.json ──► app/build_data.py ──► app/data/<
 | Audio | The files themselves | MP3 320 copies from `app/cache/public/audio/<song>/<master \| orig \| version label>.mp3`, cached a day. With no copy, it falls back to the file in the data. |
 | Album data | As built | The same, with every folder and file path removed. |
 | Notes, marks, order, notepad | `app/state/<album>.json` | The visitor's browser (`localStorage`, `godmix.demo.<album>`). `GET /api/state` answers `{}`. |
-| Make versions, export, add or edit albums | Run as jobs | Each says it comes with GODMIX on your own computer, with a **Get GODMIX** button to the setup steps. The "make it" rows read "in the app". |
+| Make versions, export, add or edit albums | Run as jobs | Each says it comes with GODMIX on your own computer, with a **Get GODMIX** button that opens the GitHub repo in a new tab. The "make it" rows read "in the app". |
 | Folders, "show the file" | Open the file manager | Hidden. |
 | Every `POST` | Allowed with the header | `403`, so the server never writes anything. |
 | The homepage's download | Exported on first request | The files `build_public.py` made in `app/cache/public/download/`. Nothing runs. |
 | Pages | As written | Served with `<html class="demo">`: the buttons say **Try GODMIX**, and the app shows a thin bar ("You're trying GODMIX with 000 by Kyler Simzer…"). `.if-demo` and `.if-local` show text for one or the other. |
-| Setup, GitHub links | Shown | Shown too: the setup steps, the GitHub link, "Get it, free" and the bar's **Get GODMIX** button. |
+| Setup, GitHub links | Shown | Shown too: the setup steps and the GitHub link. "Get it, free" and the bar's **Get GODMIX** button open the GitHub repo; nothing downloads. |
 
 **To try it locally:** `python app/build_public.py`, then `npm run demo` (http://localhost:8334).
 
