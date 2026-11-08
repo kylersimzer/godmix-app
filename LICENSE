@@ -19,16 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-This license covers the GODMIX source code only. It does not cover:
-
-- the demo album 000 in demo/ (its recordings, compositions and lyrics), which is
-  (c) 2025 Kyler Simzer, all rights reserved; see demo/README.md;
-- any other music by Kyler Simzer, released or not (recordings, compositions,
-  lyrics, artwork and track lists), wherever it appears, which is all rights
-  reserved;
-- the names GODMIX and stems.fm, or the Three dials mark and other brand marks.
-
-See NOTICE.md for details and for the licences of third-party software.
