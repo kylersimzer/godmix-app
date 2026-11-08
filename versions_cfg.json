@@ -1,0 +1,207 @@
+{
+  "recipes": {
+    "Slowed + Reverb": {
+      "speed": 0.81964,
+      "deess": {
+        "from_hz": 4000,
+        "above_percentile": 90,
+        "ratio": 3.0,
+        "max_db": 6.0,
+        "attack_ms": 1.0,
+        "release_ms": 60.0
+      },
+      "high_shelf": {
+        "hz": 7000,
+        "db": -1.0,
+        "q": 0.7
+      },
+      "reverb": {
+        "room_size": 0.85,
+        "damping": 0.62,
+        "width": 1.0,
+        "wet": 0.25,
+        "send_highpass_hz": 300,
+        "send_lowpass_hz": 7000,
+        "predelay_ms": 45,
+        "duck_db": 8,
+        "duck_release_ms": 300
+      },
+      "tail_s": 3.0,
+      "target_offset": -1.0
+    },
+    "Sped Up": {
+      "speed": 1.25
+    },
+    "Other Room": {
+      "mono": true,
+      "lowpass_hz": 520,
+      "lowpass_passes": 2,
+      "reverb": {
+        "room_size": 0.35,
+        "damping": 0.7,
+        "width": 0.2,
+        "wet": 0.28,
+        "send_highpass_hz": 0
+      },
+      "tail_s": 1.5,
+      "target_offset": -3.5
+    },
+    "Bass Boosted": {
+      "bass": {
+        "split_hz": 120,
+        "low_ratio_db": 5.5,
+        "sub_hz": 60,
+        "sub_db": 2.0,
+        "drive": 2.5,
+        "sat_mix": 0.5,
+        "sat_lp_hz": 400,
+        "duck_db": 2.5,
+        "mix_sat": 0.0
+      },
+      "highpass_hz": 25,
+      "target_lufs": -8.0,
+      "clip_db": 2.5
+    },
+    "Max Bass Boost": {
+      "bass": {
+        "split_hz": 140,
+        "low_ratio_db": 7.0,
+        "sub_hz": 60,
+        "sub_db": 2.0,
+        "drive": 6.0,
+        "sat_mix": 0.85,
+        "sat_lp_hz": 2500,
+        "duck_db": 4.0,
+        "mix_sat": 0.3
+      },
+      "highpass_hz": 25,
+      "target_lufs": -6.5,
+      "clip_db": 4.0
+    }
+  },
+  "albums": {
+    "demo": {
+      "tracks": {
+        "Mantra": [
+          "Sped Up",
+          "Bass Boosted",
+          "Max Bass Boost"
+        ],
+        "Blue": [
+          "Slowed + Reverb",
+          "Bass Boosted",
+          "Max Bass Boost"
+        ],
+        "God Save Me When I Need You": [
+          "Slowed + Reverb",
+          "Bass Boosted",
+          "Max Bass Boost"
+        ],
+        "Summer Rays": [
+          "Slowed + Reverb",
+          "Bass Boosted",
+          "Max Bass Boost"
+        ],
+        "It": [
+          "Bass Boosted",
+          "Max Bass Boost"
+        ],
+        "Suicide Song": [
+          "Bass Boosted",
+          "Max Bass Boost"
+        ],
+        "Champion": [
+          "Bass Boosted",
+          "Max Bass Boost"
+        ],
+        "Find You": [
+          "Bass Boosted",
+          "Max Bass Boost"
+        ],
+        "Since Birth": [
+          "Bass Boosted",
+          "Max Bass Boost"
+        ],
+        "Nemo": [
+          "Bass Boosted",
+          "Max Bass Boost"
+        ],
+        "Masterpiece": [
+          "Bass Boosted",
+          "Max Bass Boost"
+        ]
+      },
+      "overrides": {
+        "Mantra": {
+          "Slowed + Reverb": {
+            "speed": 0.84065,
+            "high_shelf": {
+              "db": -2.0
+            },
+            "reverb": {
+              "room_size": 0.8,
+              "duck_db": 8,
+              "predelay_ms": 46,
+              "wet": 0.27
+            }
+          },
+          "Sped Up": {
+            "speed": 1.18886
+          }
+        },
+        "Blue": {
+          "Slowed + Reverb": {
+            "speed": 0.84138,
+            "high_shelf": {
+              "db": -1.0
+            },
+            "reverb": {
+              "room_size": 0.85,
+              "duck_db": 6,
+              "predelay_ms": 42,
+              "wet": 0.242
+            }
+          },
+          "Sped Up": {
+            "speed": 1.18989
+          }
+        },
+        "God Save Me When I Need You": {
+          "Slowed + Reverb": {
+            "speed": 0.89038,
+            "high_shelf": {
+              "db": -3.0
+            },
+            "reverb": {
+              "room_size": 0.85,
+              "duck_db": 6,
+              "predelay_ms": 77,
+              "wet": 0.247
+            },
+            "deess": null
+          },
+          "Sped Up": {
+            "speed": 1.25919
+          }
+        },
+        "Summer Rays": {
+          "Slowed + Reverb": {
+            "speed": 0.83993,
+            "high_shelf": {
+              "db": -1.0
+            },
+            "reverb": {
+              "room_size": 0.8,
+              "duck_db": 8,
+              "predelay_ms": 41,
+              "wet": 0.265
+            }
+          },
+          "Sped Up": {
+            "speed": 1.18783
+          }
+        }
+      }
+    }
+  }
+}

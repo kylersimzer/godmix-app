@@ -1,0 +1,59 @@
+/* GODMIX design tokens. The look is stems.fm's (black, one off-white ink, Geist and Geist Mono; any colour
+   comes from the music or a status), finished to the standard of linear.app: hairline borders, dense
+   13 px type, quiet surfaces, fast motion. Dark is the default; light is stems.fm's gallery paper. */
+:root {
+  color-scheme: dark;
+  --ink: 236, 235, 230;
+  --bg: #000;
+  --bg-1: #08090a;            /* sidebar, player */
+  --bg-2: #0f1011;            /* cards, inputs */
+  --bg-3: #16171a;            /* hover */
+  --bg-4: #1d1e22;            /* selected, pressed */
+  --bg-raised: #121315;       /* menus, dialogs */
+  --fg: #ecebe6;
+  --fg-2: rgba(var(--ink), 0.72);
+  --fg-3: rgba(var(--ink), 0.48);
+  --fg-4: rgba(var(--ink), 0.3);
+  --line: rgba(var(--ink), 0.09);
+  --line-2: rgba(var(--ink), 0.14);
+  --line-3: rgba(var(--ink), 0.22);
+  --accent: #ffffff;          /* the playing track, the play button, progress */
+  --accent-ink: #000;
+  --wave: rgba(var(--ink), 0.2);
+  --wave-on: #ffffff;
+  --good: #4cc38a; --good-soft: rgba(76, 195, 138, 0.12);
+  --warn: #e5a84b; --warn-soft: rgba(229, 168, 75, 0.13);
+  --bad: #eb5757;  --bad-soft: rgba(235, 87, 87, 0.13);
+  --focus: rgba(255, 255, 255, 0.55);
+  --shadow-menu: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --glass: rgba(8, 9, 10, 0.82);
+
+  --sans: 'Geist', 'Inter', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
+  --fs-micro: 11px; --fs-mini: 12px; --fs-small: 13px; --fs-regular: 14px; --fs-large: 16px; --fs-title: 22px;
+  --r-4: 4px; --r-6: 6px; --r-8: 8px; --r-12: 12px; --r-pill: 999px;
+  --fast: 0.1s; --med: 0.18s; --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --sidebar: 236px; --inspector: 340px; --player: 76px; --header: 48px;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+  --ink: 21, 21, 21;
+  --bg: #f2f1ec;
+  --bg-1: #ebeae4;
+  --bg-2: #f7f6f2;
+  --bg-3: #e6e5df;
+  --bg-4: #dddcd5;
+  --bg-raised: #fbfaf7;
+  --fg: #151515;
+  --accent: #151515;
+  --accent-ink: #f2f1ec;
+  --wave-on: #151515;
+  --good: #1f8a55; --good-soft: rgba(31, 138, 85, 0.12);
+  --warn: #a5650b; --warn-soft: rgba(165, 101, 11, 0.12);
+  --bad: #c33c3c;  --bad-soft: rgba(195, 60, 60, 0.12);
+  --focus: rgba(21, 21, 21, 0.5);
+  --shadow-menu: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.14);
+  --shadow-card: none;
+  --glass: rgba(235, 234, 228, 0.86);
+}

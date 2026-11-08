@@ -1,0 +1,22 @@
+{
+  "albums": [
+    {
+      "id": "demo", "title": "000", "subtitle": "", "artist": "Kyler Simzer", "demo": true,
+      "folder": "demo/000", "released": true,
+      "year": 2025,
+      "tracks": [
+        {"file": "01. Blue.flac", "n": 1, "title": "Blue", "isrc": "QZS652557969"},
+        {"file": "02. It.flac", "n": 2, "title": "It", "isrc": "SE6XW2584380"},
+        {"file": "03. God Save Me When I Need You.flac", "n": 3, "title": "God Save Me When I Need You", "isrc": "QZS672598018"},
+        {"file": "04. Summer Rays.flac", "n": 4, "title": "Summer Rays", "isrc": "QZS662536797"},
+        {"file": "05. Suicide Song.flac", "n": 5, "title": "Suicide Song", "isrc": "QZJRB2565065"},
+        {"file": "06. Champion.flac", "n": 6, "title": "Champion", "isrc": "QZKDK2564542"},
+        {"file": "07. Find You.flac", "n": 7, "title": "Find You", "isrc": "SE6XW2584381"},
+        {"file": "08. Mantra.flac", "n": 8, "title": "Mantra", "isrc": "SE6XW2584382"},
+        {"file": "09. Since Birth.flac", "n": 9, "title": "Since Birth", "isrc": "SE6XW2584383"},
+        {"file": "10. Nemo.flac", "n": 10, "title": "Nemo", "isrc": "SE6XW2584384"},
+        {"file": "11. Masterpiece.flac", "n": 11, "title": "Masterpiece", "isrc": "SE6XW2584385"}
+      ]
+    }
+  ]
+}

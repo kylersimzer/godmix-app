@@ -1,0 +1,116 @@
+<!doctype html>
+<!-- GODMIX · music and code by Kyler Simzer · kyler@stems.fm · © 2026 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GODMIX</title>
+<meta name="description" content="Hear every master and version of an album side by side, and build its running order.">
+<meta name="author" content="Kyler Simzer">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/css/app.css">
+<script>try { const t = JSON.parse(localStorage.getItem('godmix.theme')); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
+</head>
+<body>
+<div class="shell" id="shell">
+
+  <div class="demo-bar" role="note">
+    <span>You’re trying GODMIX with <b id="demoWhat">the demo album</b>. The app for your own albums is coming soon.</span>
+    <span class="dim">Your notes stay in this browser.</span>
+    <a class="btn solid" href="/soon">Coming soon</a>
+  </div>
+
+  <aside class="side" aria-label="Albums and folders">
+    <a class="brand" href="/" data-tip="GODMIX homepage">
+      <svg class="logo" viewBox="1.5 8.5 21 7" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="5" cy="12" r="2.7" stroke-width="1.3"/><path d="M5 12H3" stroke-width="1.2"/><circle cx="12" cy="12" r="2.7" stroke-width="1.3"/><path d="M12 12l1-1.73" stroke-width="1.2"/><circle cx="19" cy="12" r="2.7" stroke-width="1.3"/><path d="M19 12l1.73 1" stroke-width="1.2"/></g></svg><b>GODMIX</b><span class="ver mono" id="ver"></span>
+    </a>
+    <button class="search" id="openCmd" data-tip="Search tracks, albums and commands" data-key="Ctrl K"><span class="ico"></span><span>Search or jump to…</span><kbd id="cmdKey">Ctrl K</kbd></button>
+    <nav class="nav">
+      <h3 class="label nav-hd">Albums <button class="btn icon" id="addAlbum" data-tip="Add an album from a folder"></button></h3>
+      <div id="albums"></div>
+      <h3 class="label">Folders</h3>
+      <div id="folders"></div>
+    </nav>
+    <div class="jobs" id="jobs" hidden aria-live="polite"></div>
+    <div class="side-foot">
+      <button class="btn icon" id="helpBtn" data-tip="Keyboard shortcuts" data-key="?"></button>
+      <button class="btn icon" id="themeBtn" data-tip="Light or dark" data-key="Shift T"></button>
+      <span class="grow"></span>
+      <button class="btn icon" id="inspBtn" data-tip="Track details panel" data-key="I"></button>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <div class="top">
+      <div class="crumbs"><b id="crumbAlbum">GODMIX</b><span class="sep">/</span><span class="dim">Running order</span></div>
+      <span class="grow"></span>
+      <button class="btn" id="undoBtn" data-tip="Undo" data-key="Ctrl Z" disabled></button>
+      <button class="btn" id="copyBtn" data-tip="Copy the running order with start times"></button>
+      <button class="btn" id="padBtn" data-tip="A notepad for this album, with tabs" data-key="P" aria-pressed="false"></button>
+      <button class="btn" id="resetBtn" data-tip="Back to the album's own order"></button>
+      <button class="btn line" id="exportBtn" data-tip="Tagged files, or the whole album as one file" data-key="E"></button>
+    </div>
+    <div class="page" id="page">
+      <div class="hero">
+        <div>
+          <h1 id="albumTitle">Loading…</h1>
+          <div class="meta label" id="albumMeta"></div>
+        </div>
+      </div>
+      <section class="card arc" aria-label="Album energy arc">
+        <div class="hd"><h2>Energy arc</h2><span class="dim" style="font-size:12px">Loudness across the album in your order. Click to jump there.</span></div>
+        <canvas id="arc"></canvas>
+      </section>
+      <div class="section-hd">
+        <h2>Running order <span class="dim" style="font-weight:400">· drag, or <kbd>Alt</kbd> <kbd>↑</kbd> <kbd>↓</kbd></span></h2>
+        <div class="tools">
+          <label class="toggle" data-tip="Keep playing into the next song" data-key="C"><input type="checkbox" id="cont">Play through</label>
+          <label class="toggle">Gap <select class="select" id="gap"><option value="0">0 s</option><option value="0.5">0.5 s</option><option value="1">1 s</option><option value="2">2 s</option><option value="3">3 s</option><option value="4">4 s</option></select></label>
+          <label class="toggle">Transition <select class="select" id="tlen"><option value="6">6 s</option><option value="10">10 s</option><option value="15">15 s</option><option value="20">20 s</option></select></label>
+          <label class="toggle" data-tip="Show tempo, key and energy between songs" data-key="T"><input type="checkbox" id="showTrans">Transitions</label>
+        </div>
+      </div>
+      <div class="list" id="list" role="listbox" aria-label="Running order"></div>
+      <section class="card notes-card">
+        <div class="section-hd"><div><h2>Mix notes</h2><span class="dim" style="font-size:12px">What still needs changing across the album. “Copy all” adds every song’s notes, marks and status, ready to hand to Claude or an engineer.</span></div>
+          <button class="btn line" id="copyNotes" data-tip="Copy these with every song's notes and marks, as Markdown"></button></div>
+        <textarea class="field" id="albumNotes" rows="4" placeholder="e.g. vocals sit too low on 3 and 7; tighten the gap after Nemo…"></textarea>
+      </section>
+    </div>
+  </main>
+
+  <aside class="inspector" id="inspector" aria-label="Track details"></aside>
+
+  <footer class="player" id="player" aria-label="Player">
+    <div class="now"><div class="np"><b id="npTitle">Nothing playing</b><span id="npMeta">Pick a track, or press Space</span></div></div>
+    <div class="transport">
+      <div class="tb">
+        <button class="btn icon" id="prevBtn" data-tip="Previous track" data-key="Shift ←"></button>
+        <button class="playbtn" id="playBtn" data-tip="Play or pause" data-key="Space"></button>
+        <button class="btn icon" id="nextBtn" data-tip="Next track" data-key="Shift →"></button>
+      </div>
+      <div class="scrub">
+        <span class="time" id="tCur">0:00</span>
+        <div class="wavewrap" id="wavewrap"><canvas id="wave" aria-label="Waveform: click to seek, drag to loop"></canvas><span class="hovertime" id="hoverTime" hidden></span><span class="gapnote" id="gapNote" hidden></span></div>
+        <span class="time" id="tDur">0:00</span>
+      </div>
+    </div>
+    <div class="listen">
+      <div class="seg" id="ab" role="group" aria-label="A/B"></div>
+      <select class="select" id="verSel" aria-label="Version" data-tip="Version" data-key="0–9"></select>
+      <label class="toggle" id="matchWrap" data-tip="Turn B down to A's loudness, so you hear tone, not volume"><input type="checkbox" id="match">Match</label>
+      <div class="seg" id="mode" role="group" aria-label="Listening mode"><button data-mode="stereo" data-tip="Both channels as mixed: how headphones and a pair of speakers hear it">Stereo</button><button data-mode="mono" data-tip="Fold to mono (clubs, phones, Bluetooth)">Mono</button><button data-mode="phone" data-tip="Small speaker: mono, no lows, no air">Phone</button></div>
+      <div class="meter" data-tip="Output peak level"><i><b id="mL"></b></i><i><b id="mR"></b></i></div>
+      <div class="vol"><input type="range" id="vol" min="0" max="1" step="0.01" aria-label="Volume" data-tip="Volume"><span class="volpct mono" id="volPct" hidden></span></div>
+    </div>
+  </footer>
+</div>
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>

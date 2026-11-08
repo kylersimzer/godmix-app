@@ -1,0 +1,19 @@
+{
+  "name": "godmix",
+  "version": "2.0.0",
+  "private": true,
+  "description": "GODMIX: album mastering scripts plus a local app to A/B masters and versions and build an album's running order.",
+  "author": "Kyler Simzer <kyler@stems.fm> (https://kylersimzer.com)",
+  "homepage": "https://github.com/kylersimzer/godmix-app",
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node app/server.js --open",
+    "serve": "node app/server.js",
+    "demo": "node app/server.js 8334 --demo",
+    "public": "python app/build_public.py",
+    "data": "python app/build_data.py",
+    "design": "node design/build.mjs",
+    "test": "node --test tests/server.test.mjs tests/demo.test.mjs"
+  }
+}

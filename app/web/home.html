@@ -1,0 +1,252 @@
+<!doctype html>
+<!-- GODMIX · music and code by Kyler Simzer · kyler@stems.fm · © 2026 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GODMIX: hear every version of the album</title>
+<meta name="description" content="GODMIX is a local listening room for mastering and sequencing an album: A/B every master and version in sync, hear every transition, and leave notes Claude can act on.">
+<meta name="author" content="Kyler Simzer">
+<meta name="theme-color" content="#000000">
+<meta property="og:title" content="GODMIX">
+<meta property="og:description" content="Hear every version of the album. A/B masters and versions in sync, build the running order, leave timestamped notes.">
+<meta property="og:image" content="/assets/link-preview.png">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/css/home.css">
+<script>try { const t = JSON.parse(localStorage.getItem('godmix.theme')); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="mark" viewBox="1.5 8.5 21 7"><g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="5" cy="12" r="2.7" stroke-width="1.3"/><path d="M5 12H3" stroke-width="1.2"/><circle cx="12" cy="12" r="2.7" stroke-width="1.3"/><path d="M12 12l1-1.73" stroke-width="1.2"/><circle cx="19" cy="12" r="2.7" stroke-width="1.3"/><path d="M19 12l1.73 1" stroke-width="1.2"/></g></symbol></svg>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="lockup" href="/" aria-label="GODMIX home"><svg><use href="#mark"/></svg>GODMIX</a>
+    <nav class="links" aria-label="Sections"><a href="#compare">Compare</a><a href="#sequence">Sequence</a><a href="#notes">Notes</a><a href="#keyboard">Keyboard</a><a href="#export">Export</a><a href="#new">New</a><a class="if-local" href="#setup">Setup</a><a class="if-demo" href="/soon">Coming soon</a></nav>
+    <span class="grow"></span>
+    <label class="navvol" id="navVolWrap" hidden data-tip="Volume for the sounds on this page"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3H2.5z"/><path d="M11 5.5a3.5 3.5 0 010 5M12.8 3.5a6 6 0 010 9"/></svg><input type="range" id="navVol" min="0" max="1" step="0.01" aria-label="Volume"><span class="mono" id="navVolPct">60%</span></label>
+    <a class="btn line if-local" href="https://github.com/kylersimzer/godmix-app">GitHub</a>
+    <a class="btn solid" href="/app"><span class="if-local">Open GODMIX</span><span class="if-demo">Try GODMIX</span></a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <a class="eyebrow rv" href="#keyboard"><b>2.0</b>A new look, marks, loops and a command menu →</a>
+      <h1 class="rv">Hear every version<br>of the album.</h1>
+      <p class="lede rv">GODMIX is a local listening room for <b>mastering and sequencing an album</b>. A/B every master and version in sync, hear every transition, and leave notes Claude can act on.</p>
+      <p class="byline rv">By <a href="https://kylersimzer.com">Kyler Simzer</a></p>
+      <div class="ctas rv"><a class="btn solid big" href="/app"><span class="if-local">Open GODMIX</span><span class="if-demo">Try GODMIX</span> <kbd>↵</kbd></a><a class="btn line big if-local" href="#setup">Set it up</a><a class="btn line big if-demo" href="/soon">Coming soon</a><span class="note if-local">Runs on your machine · 127.0.0.1 only</span><span class="note if-demo">Try it here with 000 · the app for your own albums is coming soon</span></div>
+    </div>
+    <div class="shot" id="shot"><div class="frame"><img src="/assets/screens/app-dark.png" width="2880" height="1760" alt="The GODMIX app: albums in a sidebar, the running order with transitions, track details and the player"><div class="live" id="live" hidden></div></div></div>
+    <p class="live-cap dim rv">The player is real. Pick a song, press play, flip to the slowed version.</p>
+  </section>
+
+  <div class="wrap">
+    <div class="figs">
+      <div class="fig rv"><span class="label">Fig 0.1</span><div class="ill"><div class="seg"><span>A · Album</span><span class="on">B · Slowed</span></div></div>
+        <h3>Honest A/B</h3><p>Loudness-matched on one key, so a master never wins just by being louder.</p></div>
+      <div class="fig rv"><span class="label">Fig 0.2</span><div class="ill"><div class="wavebar" data-bars="54" data-on="0.42" style="width:100%;height:44px"></div></div>
+        <h3>Versions in sync</h3><p>Slowed, sped up, other room, bass boosted. Switch mid-song and land on the same moment.</p></div>
+      <div class="fig rv"><span class="label">Fig 0.3</span><div class="ill"><div class="arcv" data-arc="64" style="padding:0;height:56px;width:100%"></div></div>
+        <h3>Made for running orders</h3><p>Drag tracks, hear each seam, and see the album’s energy as one arc.</p></div>
+    </div>
+  </div>
+
+  <section class="feature" id="compare">
+    <div class="wrap">
+      <div class="head rv"><div><span class="label">01 · Compare</span><h2>A/B like a<br>mastering room.</h2></div>
+        <p>Two files play on one clock and switch in 12 ms, so you hear the difference, not a gap. Fold to mono, squeeze it through a phone speaker, or loop the one bar you’re unsure of.</p></div>
+      <div class="grid2">
+        <div class="panel rv ab-panel" id="abDemo" hidden></div>
+        <div class="panel rv cell" style="display:flex;flex-direction:column;justify-content:space-between">
+          <div><span class="label">Version keys</span><h4>0 is the album. 1–9 are its versions.</h4><p>Tap a number and GODMIX lands on the same spot in the song, at the new speed. A plays the album, B the version.</p></div>
+          <div style="display:flex;gap:6px;margin-top:22px"><kbd>0</kbd><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span style="width:14px"></span><kbd>A</kbd><kbd>B</kbd><kbd>Tab</kbd></div>
+        </div>
+      </div>
+      <div class="grid3">
+        <div class="panel cell rv"><span class="label">Listening modes</span><h4>Stereo, mono, phone</h4><p>Hear what clubs, Bluetooth speakers and phones will do to the mix.</p></div>
+        <div class="panel cell rv"><span class="label">Loops</span><h4>Loops that stay put</h4><p>Drag across the waveform. The loop follows the song through every version.</p></div>
+        <div class="panel cell rv"><span class="label">Metering</span><h4>Live peak meter</h4><p>Output peaks per channel, in the bar, with headroom and clip colours.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="feature" id="analysis">
+    <div class="wrap">
+      <div class="head rv"><div><span class="label">02 · Analysis</span><h2>Measured,<br>not guessed.</h2></div>
+        <p>Every song is measured (on your device) as it comes in: tempo, key on the Camelot wheel, loudness, range and true peak. The numbers drive the transitions and the loudness matching. And because a measurement can be wrong, every one can be corrected by hand.</p></div>
+      <div class="panel rv an-panel" id="analysisDemo" hidden></div>
+    </div>
+  </section>
+
+  <section class="feature" id="sequence">
+    <div class="wrap">
+      <div class="head rv"><div><span class="label">03 · Sequence</span><h2>The album,<br>as one piece.</h2></div>
+        <p>Drag songs into order and every seam is read for you: tempo, key and energy. Hear any transition with its real gap, or play the whole thing through.</p></div>
+      <div class="grid2">
+        <div class="panel rv od-panel" id="orderDemo" hidden></div>
+        <div class="panel rv tr-panel" id="transDemo" hidden></div>
+      </div>
+      <div class="grid3">
+        <div class="panel cell rv"><span class="label">Transitions</span><h4>Hear every seam</h4><p>Plays the last seconds of one song, the gap, then the next song’s opening.</p></div>
+        <div class="panel cell rv"><span class="label">Energy arc</span><h4>See the whole album</h4><p>Every song’s loudness, end to end in your order. Click anywhere to jump there.</p></div>
+        <div class="panel cell rv"><span class="label">Undo</span><h4>Move freely</h4><p>Every move can be undone, and the order is saved as you go.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="feature" id="notes">
+    <div class="wrap">
+      <div class="head rv"><div><span class="label">04 · Notes</span><h2>Notes that<br>Claude can read.</h2></div>
+        <p>Press N while a song plays to pin a note to that moment. Mark songs as needing work or approved. Copy everything as Markdown, or let Claude read it straight from the saved state.</p></div>
+      <div class="grid2">
+        <div class="panel rv"><div class="marks">
+          <div class="mk"><b>0:42</b><span>Hi-hats a little harsh after the drop</span></div>
+          <div class="mk"><b>1:58</b><span>Vocal sits too far back in the slowed version</span></div>
+          <div class="mk"><b>2:31</b><span>Love this transition, keep the 2 s gap</span></div>
+        </div>
+<pre class="md"><em>## 2. Summer Rays (needs work)</em>
+
+- 0:42: Hi-hats a little harsh after the drop
+- 1:58: Vocal sits too far back in the slowed version</pre></div>
+        <div class="panel cell rv" style="display:flex;flex-direction:column;justify-content:space-between">
+          <div><span class="label">Status</span><h4>Needs work, approved</h4><p>One key, S, cycles a song’s status. The album header counts what’s approved.</p></div>
+          <div class="rows" style="padding:16px 0 0"><div class="r s"><span class="d"></span><span>No status</span></div><div class="r s"><span class="d wk"></span><span>Needs work</span></div><div class="r s"><span class="d ok"></span><span>Approved</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="feature" id="keyboard">
+    <div class="wrap">
+      <div class="head rv"><div><span class="label">05 · Keyboard</span><h2>Everything is<br>a keystroke away.</h2></div>
+        <p>Ctrl K finds any track, version, album, folder or command. Every button has a shortcut, and ? shows them all.</p></div>
+      <div class="panel rv">
+        <div class="cmdk"><div class="in">slow<i></i></div>
+          <div class="it on"><span>Slowed + Reverb</span><span>1</span></div><div class="it"><span>Listen on a phone speaker</span><span>M</span></div><div class="it"><span>Open the versions folder</span><span></span></div></div>
+        <div class="keys">
+          <div><span><kbd>Space</kbd></span>Play or pause</div>
+          <div><span><kbd>A</kbd><kbd>B</kbd></span>Flip between files</div>
+          <div><span><kbd>Alt</kbd><kbd>↑</kbd><kbd>↓</kbd></span>Reorder the album</div>
+          <div><span><kbd>N</kbd></span>Mark this moment</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="feature" id="export">
+    <div class="wrap">
+      <div class="head rv"><div><span class="label">06 · Export</span><h2>Ready to<br>release.</h2></div>
+        <p>Export the songs in your running order as tagged files, or render the whole album as one file with your exact gaps and a cue sheet. Missing versions are one click away.</p></div>
+      <div class="panel rv ex-panel" id="exportDemo" hidden></div>
+      <div class="grid3">
+        <div class="panel cell rv"><span class="label">Tagged files</span><h4>Titles, artwork, ISRCs</h4><p>WAV, FLAC and MP3 with artist, album, track number, year, copyright, ISRC and the cover built in. The WAV and FLAC are bit-exact.</p></div>
+        <div class="panel cell rv"><span class="label">Full album</span><h4>One file, start to finish</h4><p>The running order joined with your gaps, sample-accurate, plus a cue sheet and a tracklist with start times. Works for any version too.</p></div>
+        <div class="panel cell rv"><span class="label">Versions on demand</span><h4>Make what’s missing</h4><p>Songs without a slowed, sped-up or other-room version show it anyway. Click to design it from the song and render it.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="feature" id="new">
+    <div class="wrap">
+      <div class="head rv"><div><span class="label">07 · What’s new</span><h2>Listen to<br>the changelog.</h2></div>
+        <p>Each new thing in GODMIX 2.0 comes with the sound of it. Press play; it stops on its own.</p></div>
+      <div class="panel rv sl-panel" id="soundlog" hidden></div>
+    </div>
+  </section>
+
+  <section class="feature">
+    <div class="wrap">
+      <div class="head rv"><div><span class="label">08 · Albums</span><h2>Every album,<br>one switch.</h2></div>
+        <p>Each card is drawn from the album itself: its loudness, start to finish, one arc per song. Released albums are read-only; versions are made from them, never over them.</p></div>
+      <div class="albums rv" id="albums">
+        <div class="alb"><b>000</b><span>by Kyler Simzer</span><small>released</small></div><div class="alb"><b>O</b><span>by Kyler Simzer</span><small>released</small></div>
+        <div class="alb"><b>111</b><span>by Kyler Simzer</span><small>released</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="feature if-local" id="setup">
+    <div class="wrap">
+      <div class="head rv"><div><span class="label">09 · Setup</span><h2>Three steps<br>to the room.</h2></div>
+        <p>Node.js runs the app. Python measures the albums and makes the masters and versions. Nothing leaves your machine.</p></div>
+      <div class="panel rv install" id="install">
+        <div class="install-cmd"><div class="label">One go: clone, set up, measure the demo, open the room <span id="installOs">(Windows)</span></div>
+          <pre class="code" id="installCmd" data-nix="git clone https://github.com/kylersimzer/godmix-app.git&#10;cd godmix-app&#10;python3 -m venv .venv&#10;.venv/bin/python -m pip install -r requirements.txt&#10;.venv/bin/python app/build_data.py&#10;npm start">git clone https://github.com/kylersimzer/godmix-app.git
+cd godmix-app
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python app/build_data.py
+npm start</pre>
+          <button class="btn line" id="copyInstall">Copy</button></div>
+        <div class="install-side"><div class="label">What the sidebar shows while it makes the demo’s versions</div><div class="jobs" id="jobsReplay"></div></div>
+      </div>
+      <div class="steps">
+        <div class="panel step rv"><span class="label">Step 1</span><h4>Install</h4><p>Node 20+, Python 3.12 and ffmpeg.</p>
+          <div class="code">python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+<span class="c"># macOS/Linux: python3 -m venv .venv, then .venv/bin/python -m pip …</span></div></div>
+        <div class="panel step rv"><span class="label">Step 2</span><h4>Measure the albums</h4><p>The demo album, 000 by Kyler Simzer, comes with it. Add your own from the app.</p>
+          <div class="code"><span class="c"># measures the albums for the app</span>
+.venv\Scripts\python app/build_data.py</div></div>
+        <div class="panel step rv"><span class="label">Step 3</span><h4>Open the room</h4><p>Or double-click GodMix.cmd on Windows.</p>
+          <div class="code">npm start
+<span class="c"># → http://localhost:8333/app</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <div class="wrap">
+      <svg class="mk-big rv"><use href="#mark"/></svg>
+      <h2 class="rv">Hear it. Shape it.<br>Release it.</h2>
+      <div class="ctas rv"><a class="btn solid big" href="/app"><span class="if-local">Open GODMIX</span><span class="if-demo">Try GODMIX</span> <kbd>↵</kbd></a></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a class="lockup" href="/" aria-label="GODMIX home"><svg><use href="#mark"/></svg>GODMIX</a>
+        <p>A local listening room for mastering and sequencing an album.</p>
+      </div>
+      <nav class="foot-col" aria-label="GODMIX">
+        <h4 class="label">GODMIX</h4>
+        <a href="/app"><span class="if-local">Open the app</span><span class="if-demo">Try the app</span></a><a href="#new">What’s new</a><a class="if-local" href="#setup">Setup</a><a class="if-local" href="https://github.com/kylersimzer/godmix-app">GitHub</a><a class="if-demo" href="/soon">Coming soon</a>
+      </nav>
+      <nav class="foot-col" aria-label="Kyler Simzer">
+        <h4 class="label">Kyler Simzer</h4>
+        <a href="https://kylersimzer.com">kylersimzer.com</a><a href="https://stems.fm">stems.fm</a>
+      </nav>
+      <div class="foot-col foot-follow">
+        <h4 class="label">Follow</h4>
+        <nav class="social" aria-label="Kyler Simzer on social media">
+      <a href="https://x.com/kyler1s" title="X" aria-label="X"><svg viewBox="0 0 24 24"><path d="M3 3h4.6l4.2 5.9L17 3h2.6l-6.6 7.5L21 21h-4.6l-4.5-6.3L6.3 21H3.7l7-8z" fill="currentColor"/></svg></a>
+      <a href="https://www.instagram.com/kyler/" title="Instagram" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="currentColor" stroke="none"/></svg></a>
+      <a href="https://music.apple.com/us/artist/kyler-simzer/1826036316" title="Apple Music" aria-label="Apple Music"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4.5"/><path d="M9.5 16.2V8.3l6.5-1.6v7.7"/><circle cx="7.8" cy="16.2" r="1.7" fill="currentColor" stroke="none"/><circle cx="14.3" cy="14.4" r="1.7" fill="currentColor" stroke="none"/></svg></a>
+      <a href="https://www.youtube.com/@kyler_" title="YouTube" aria-label="YouTube"><svg viewBox="0 0 24 24"><path d="M22 8.2a2.8 2.8 0 00-2-2C18.3 5.8 12 5.8 12 5.8s-6.3 0-8 .4a2.8 2.8 0 00-2 2A29 29 0 001.6 12 29 29 0 002 15.8a2.8 2.8 0 002 2c1.7.4 8 .4 8 .4s6.3 0 8-.4a2.8 2.8 0 002-2 29 29 0 00.4-3.8 29 29 0 00-.4-3.8zM10 14.7V9.3l5.2 2.7z" fill="currentColor"/></svg></a>
+      <a href="https://open.spotify.com/artist/7aVm8fnxM8eVrusQveFs98" title="Spotify" aria-label="Spotify"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M7 9.3c3.4-1 7-.6 9.8.9M7.5 12.3c2.7-.8 5.7-.4 8 .8M8 15.1c2.1-.6 4.4-.3 6.2.7"/></svg></a>
+      <a href="https://soundcloud.com/kylersimzer" title="SoundCloud" aria-label="SoundCloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.5 17.5V8.6a4.6 4.6 0 018.3 1.9h.7a3.5 3.5 0 010 7h-9"/><path d="M8 17.5v-7M5.5 17.5v-5M3 17.5v-3"/></svg></a>
+    </nav>
+        <h4 class="label">Contact</h4>
+        <a class="foot-mail" href="mailto:kyler@stems.fm">kyler@stems.fm</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>Music © Kyler Simzer, all rights reserved.</span>
+      <span>Code © 2026 Kyler Simzer, MIT License.</span>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/js/home.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GODMIX design</title>
+<link rel="icon" href="icons/favicon.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../app/web/css/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 56px 32px 96px; }
+  .label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-4); }
+  h1 { font-size: 40px; letter-spacing: -0.035em; font-weight: 600; margin: 14px 0 6px; }
+  h2 { font-size: 20px; letter-spacing: -0.02em; font-weight: 500; margin: 72px 0 6px; }
+  p { color: var(--fg-3); margin: 0 0 22px; max-width: 680px; }
+  code { font-family: var(--mono); font-size: 12px; color: var(--fg-2); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .tile { border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; background: var(--bg-1); }
+  .tile .art { height: 190px; display: grid; place-items: center; padding: 22px; }
+  .tile .art img { max-width: 100%; max-height: 100%; }
+  .tile .art.black { background: #000; } .tile .art.paper { background: #f2f1ec; } .tile .art.check { background: repeating-conic-gradient(#1a1a1a 0 25%, #111 0 50%) 0 0 / 18px 18px; }
+  .tile .meta { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; }
+  .tile .meta b { font-weight: 500; font-size: 13px; }
+  .tile .meta a { font-family: var(--mono); font-size: 11px; color: var(--fg-3); text-decoration: none; }
+  .wide { grid-column: 1 / -1; } .wide .art { height: auto; padding: 0; } .wide .art img { width: 100%; display: block; }
+  .two { grid-column: span 2; }
+  .sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .sw div { border-radius: 10px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+  .sw i { display: block; height: 64px; }
+  .sw span { display: block; padding: 8px 10px; font-family: var(--mono); font-size: 11px; color: var(--fg-3); }
+  .type { display: grid; gap: 16px; }
+  .type div { display: flex; align-items: baseline; gap: 24px; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+  .type span.label { width: 140px; flex: none; }
+  .rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .rules div { padding: 20px; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); background: var(--bg-1); }
+  .rules b { display: block; font-weight: 500; margin-bottom: 4px; }
+  .rules p { margin: 0; font-size: 13.5px; }
+  @media (max-width: 800px) { .rules { grid-template-columns: 1fr; } .two { grid-column: auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="label">GODMIX · Design</span>
+  <h1>The GODMIX brand</h1>
+  <p>The mark is stems.fm mark 136, <b>Three dials</b>: three knobs at three settings, like the controls GODMIX gives you over one album. The app uses the all-white mark; the toned version is the stems.fm look. Everything here is drawn by <code>design/brand.mjs</code> and rendered by <code>node design/build.mjs</code>.</p>
+
+  <h2>Mark</h2>
+  <p>White for the app and anything on black. Toned (one ink at 100, 70 and 45 percent) where it sits beside stems.fm. Black on light backgrounds.</p>
+  <div class="grid">
+    <div class="tile"><div class="art black"><img src="logo/godmix-mark-white-cropped.svg" alt="White mark" width="200"></div><div class="meta"><b>White</b><a href="logo/godmix-mark-white-1024.png">PNG</a></div></div>
+    <div class="tile"><div class="art black"><img src="logo/godmix-mark-toned-cropped.svg" alt="Toned mark" width="200"></div><div class="meta"><b>Toned</b><a href="logo/godmix-mark-toned-1024.png">PNG</a></div></div>
+    <div class="tile"><div class="art paper"><img src="logo/godmix-mark-black-cropped.svg" alt="Black mark" width="200"></div><div class="meta"><b>Black</b><a href="logo/godmix-mark-black-1024.png">PNG</a></div></div>
+    <div class="tile"><div class="art check"><img src="logo/godmix-mark-white-1024.png" alt="White mark, transparent PNG" width="170"></div><div class="meta"><b>Transparent 1024</b><a href="logo/godmix-mark-white-1024.png">PNG</a></div></div>
+  </div>
+
+  <h2>Lockup</h2>
+  <p>Mark and wordmark, set in Geist SemiBold with 4% tracking. Leave at least the height of one dial clear on every side.</p>
+  <div class="grid">
+    <div class="tile two"><div class="art black"><img src="logo/godmix-lockup-white-2x.png" alt="White lockup" width="279"></div><div class="meta"><b>White</b><a href="logo/godmix-lockup-white-2x.png">PNG</a></div></div>
+    <div class="tile"><div class="art black"><img src="logo/godmix-lockup-toned-2x.png" alt="Toned lockup" width="230"></div><div class="meta"><b>Toned</b><a href="logo/godmix-lockup-toned-2x.png">PNG</a></div></div>
+    <div class="tile"><div class="art paper"><img src="logo/godmix-lockup-black-2x.png" alt="Black lockup" width="230"></div><div class="meta"><b>Black</b><a href="logo/godmix-lockup-black-2x.png">PNG</a></div></div>
+  </div>
+
+  <h2>Icons</h2>
+  <p>The white mark on a black rounded tile, so it reads on light and dark tabs alike. The maskable icon keeps the dials inside the safe zone.</p>
+  <div class="grid">
+    <div class="tile"><div class="art black"><img src="icons/icon-512.png" alt="App icon" width="140"></div><div class="meta"><b>App icon 512</b><a href="icons/icon-512.png">PNG</a></div></div>
+    <div class="tile"><div class="art black"><img src="icons/icon-512-maskable.png" alt="Maskable icon" width="140" style="border-radius:50%"></div><div class="meta"><b>Maskable 512</b><a href="icons/icon-512-maskable.png">PNG</a></div></div>
+    <div class="tile"><div class="art paper"><img src="icons/apple-touch-icon.png" alt="Apple touch icon" width="120" style="border-radius:26px"></div><div class="meta"><b>Apple touch 180</b><a href="icons/apple-touch-icon.png">PNG</a></div></div>
+    <div class="tile"><div class="art paper" style="gap:18px;display:flex;justify-content:center;align-items:center"><img src="icons/favicon-16.png" alt="" width="16"><img src="icons/favicon-32.png" alt="" width="32"><img src="icons/favicon.svg" alt="" width="64"></div><div class="meta"><b>Favicons 16 · 32 · SVG</b><a href="icons/favicon.svg">SVG</a></div></div>
+  </div>
+
+  <h2>Banners</h2>
+  <p>Black, a soft light from above, and an album’s loudness along the bottom: on stems.fm the only colour comes from the music itself.</p>
+  <div class="grid">
+    <div class="tile wide"><div class="art"><img src="banners/godmix-banner-readme-1600x480.png" alt="README banner"></div><div class="meta"><b>README · 1600 × 480</b><a href="banners/godmix-banner-readme-1600x480.png">PNG</a></div></div>
+    <div class="tile wide"><div class="art"><img src="banners/godmix-banner-x-1500x500.png" alt="X header"></div><div class="meta"><b>X header · 1500 × 500</b><a href="banners/godmix-banner-x-1500x500.png">PNG</a></div></div>
+    <div class="tile two"><div class="art"><img src="banners/godmix-banner-github-1280x640.png" alt="GitHub social preview" style="width:100%"></div><div class="meta"><b>GitHub social preview · 1280 × 640</b><a href="banners/godmix-banner-github-1280x640.png">PNG</a></div></div>
+    <div class="tile two"><div class="art"><img src="banners/godmix-link-preview-1200x630.png" alt="Link preview" style="width:100%"></div><div class="meta"><b>Link preview · 1200 × 630</b><a href="banners/godmix-link-preview-1200x630.png">PNG</a></div></div>
+  </div>
+
+  <h2>Colour</h2>
+  <p>One off-white ink on black, from stems.fm. Surfaces step up in small increments; borders are the ink at 9–22%. Green, amber and red are only for status. Tokens live in <code>app/web/css/tokens.css</code>.</p>
+  <div class="sw">
+    <div><i style="background:#000"></i><span>bg #000000</span></div><div><i style="background:#08090a"></i><span>bg-1 #08090A</span></div>
+    <div><i style="background:#0f1011"></i><span>bg-2 #0F1011</span></div><div><i style="background:#16171a"></i><span>bg-3 #16171A</span></div>
+    <div><i style="background:#1d1e22"></i><span>bg-4 #1D1E22</span></div><div><i style="background:#ecebe6"></i><span>fg #ECEBE6</span></div>
+    <div><i style="background:rgba(236,235,230,.48)"></i><span>fg-3 ink 48%</span></div><div><i style="background:#f2f1ec"></i><span>paper #F2F1EC</span></div>
+    <div><i style="background:#4cc38a"></i><span>good #4CC38A</span></div><div><i style="background:#e5a84b"></i><span>warn #E5A84B</span></div><div><i style="background:#eb5757"></i><span>bad #EB5757</span></div>
+  </div>
+
+  <h2>Type</h2>
+  <p>Geist for words, Geist Mono for numbers, times and labels. Tight tracking on headings; 13 px for interface text.</p>
+  <div class="type">
+    <div><span class="label">Display 80 / 600</span><span style="font-size:56px;font-weight:600;letter-spacing:-0.045em;line-height:1">Hear every version</span></div>
+    <div><span class="label">Title 22 / 600</span><span style="font-size:22px;font-weight:600;letter-spacing:-0.02em">I Just Really Wish</span></div>
+    <div><span class="label">UI 13 / 400</span><span style="font-size:13px">Play through · Gap 2 s · Transition 10 s</span></div>
+    <div><span class="label">Mono 11.5</span><span style="font-family:var(--mono);font-size:11.5px;color:var(--fg-2)">95 bpm · −13.8 LUFS · 2:40</span></div>
+    <div><span class="label">Label 11 caps</span><span class="label" style="color:var(--fg-3)">Running order · 22 tracks</span></div>
+  </div>
+
+  <h2>Rules</h2>
+  <div class="rules">
+    <div><b>Keep the dials in order</b><p>Off, a little, most of the way: left to right. Don’t rotate, mirror or recolour single dials.</p></div>
+    <div><b>Smallest size</b><p>16 px wide on screen for the mark alone; use the tile icon below that.</p></div>
+    <div><b>Colour comes from the music</b><p>The interface stays monochrome. Use waveforms and loudness curves, not decoration.</p></div>
+  </div>
+</div>
+</body>
+</html>

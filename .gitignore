@@ -1,0 +1,42 @@
+# Python / Node
+.venv/
+__pycache__/
+node_modules/
+
+# Your own albums and their settings (albums.py reads them from here). Never commit them.
+local/
+
+# GODMIX app: generated data, cache and saved state (rebuilt by build_data.py)
+app/cache/
+app/data/
+app/data.json
+app/state/
+app/state.json
+
+# Measurement reports and config backups written by the scripts
+*_report.json
+sweep.json
+analysis.json
+edge_clean_log.json
+sequence_analysis.json
+*.before-*.json
+
+# Audio never goes in this repo
+*.wav
+*.mp3
+*.flac
+*.aif
+*.aiff
+*.m4a
+*.ogg
+*.opus
+
+# The demo album (000) is the one audio kept in this repo: the album files only, as FLAC.
+# Everything GODMIX makes from it (versions, exports) stays out. See demo/README.md and NOTICE.md.
+!demo/000/*.flac
+demo/000/Versions/
+demo/000/Exports/
+
+# Jobs the app server runs keep their spec files here briefly
+app/cache/jobs/
+app/cache/demo-export/
