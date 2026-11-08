@@ -14,6 +14,6 @@
     "public": "python app/build_public.py",
     "data": "python app/build_data.py",
     "design": "node design/build.mjs",
-    "test": "node --test tests/server.test.mjs tests/demo.test.mjs"
+    "test": "node --test tests/server.test.mjs tests/demo.test.mjs tests/sequence.test.mjs tests/jobwatch.test.mjs"
   }
 }

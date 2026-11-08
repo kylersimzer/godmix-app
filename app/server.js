@@ -134,20 +134,47 @@ function reveal(target, isFile) {
 }
 
 // ── jobs: Python work the app asks for (app/jobs.py), one at a time ──
+// Every job is one small state machine:   queued ──► running ──► done
+//                                                          └───► error
+// addJob() is the only way to make one (always queued), startJob() the only way to start one (the oldest queued,
+// when nothing is running), and endJob() the only way to finish one (when its Python process ends or can't
+// start). Jobs live in memory, so a restart forgets them; the app notices a live job going missing and says so.
 const ROOT = path.join(HERE, "..");
 const PY = process.env.GODMIX_PYTHON || [path.join(ROOT, ".venv", "Scripts", "python.exe"), path.join(ROOT, ".venv", "bin", "python")].find(p => fs.existsSync(p))
   || (process.platform === "win32" ? "python" : "python3");
 const JOB_DIR = path.join(HERE, "cache", "jobs");
+const JOB_STEPS = { queued: ["running"], running: ["done", "error"], done: [], error: [] };
 const jobs = [];          // newest last; finished ones are kept for the session (the last 30)
-let running = null;
+const isLive = j => j.status === "queued" || j.status === "running";
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+// the only place a job's status changes; anything else is a bug, logged and refused
+function moveJob(j, to) {
+  if (!JOB_STEPS[j.status]?.includes(to)) { console.error(`GODMIX: job ${j.id} can't go from ${j.status} to ${to}`); return false; }
+  j.status = to;
+  return true;
+}
 const publicJob = j => ({ id: j.id, kind: j.kind, album: j.album, label: j.label, tracks: j.tracks, versions: j.versions, status: j.status,
   action: j.action, p: j.p, msg: j.msg, result: j.result ? { folder: j.result.folder, files: j.result.files, made: j.result.made, fell_back: j.result.fell_back, album: j.result.album, match: j.result.match } : null,
   error: j.error, log: j.status === "error" ? j.log.slice(-12) : undefined, started: j.started, ended: j.ended });
-function runNext() {
-  if (running) return;
+// Queue a job: `fields` says what it is ({kind, label, album, args, ...}); `spec`, when given, is written to a JSON
+// file whose path is appended to args (jobs.py reads it) and deleted when the job ends.
+function addJob(fields, spec = null) {
+  const id = newId(), j = { id, album: null, ...fields, status: "queued", p: 0, msg: "Waiting", log: [], result: null, error: null };
+  if (spec) {
+    fs.mkdirSync(JOB_DIR, { recursive: true });
+    j.specFile = path.join(JOB_DIR, `${id}.json`);
+    fs.writeFileSync(j.specFile, JSON.stringify(spec));
+    j.args = [...j.args, j.specFile];
+  }
+  jobs.push(j);
+  startJob();
+  return j;
+}
+function startJob() {
+  if (jobs.some(x => x.status === "running")) return;
   const j = jobs.find(x => x.status === "queued");
-  if (!j) return;
-  running = j; j.status = "running"; j.started = Date.now(); j.msg = "Starting…";
+  if (!j || !moveJob(j, "running")) return;
+  j.started = Date.now(); j.msg = "Starting…";
   const child = spawn(PY, ["-u", path.join(HERE, "jobs.py"), ...j.args], { cwd: ROOT, env: { ...process.env, PYTHONIOENCODING: "utf-8" }, windowsHide: true });
   let buf = "";
   child.stdout.on("data", d => {
@@ -161,15 +188,17 @@ function runNext() {
     }
   });
   child.stderr.on("data", d => { for (const l of d.toString("utf8").split(/\r?\n/)) if (l.trim() && !/Warning|warn\(/.test(l)) j.log.push(l); });
-  child.on("error", e => { j.error = `Couldn't start Python (${PY}): ${e.message}`; });
-  child.on("close", code => {
-    j.ended = Date.now(); j.status = code === 0 && !j.error ? "done" : "error";
-    if (j.status === "error" && !j.error) j.error = j.log.slice(-1)[0] || `exited with code ${code}`;
-    if (j.specFile) fs.rm(j.specFile, { force: true }, () => {});
-    running = null;
-    while (jobs.length > 30 && !["running", "queued"].includes(jobs[0].status)) jobs.shift();
-    runNext();
-  });
+  // a process that can't start reports 'error' (and Node may or may not also report 'close'): whichever comes first ends the job
+  child.on("error", e => { j.error = `Couldn't start Python (${PY}): ${e.message}`; endJob(j, null); });
+  child.on("close", code => endJob(j, code));
+}
+function endJob(j, code) {
+  if (j.status !== "running" || !moveJob(j, code === 0 && !j.error ? "done" : "error")) return;     // already ended
+  j.ended = Date.now();
+  if (j.status === "error" && !j.error) j.error = j.log.slice(-1)[0] || `exited with code ${code}`;
+  if (j.specFile) fs.rm(j.specFile, { force: true }, () => {});
+  while (jobs.length > 30 && !isLive(jobs[0])) jobs.shift();
+  startJob();
 }
 const FORMATS = ["wav", "wav24_48", "wav24_441", "wav16", "aiff", "flac", "alac", "mp3", "aac"];
 const AUDIO = /\.(wav|flac|aiff?)$/i;
@@ -178,18 +207,12 @@ const publicCover = () => ["png", "jpg"].map(e => path.join(PUBLIC, `cover.${e}`
 const str = (v, n = 300) => (typeof v === "string" ? v.slice(0, n) : "");
 // adding an album, or changing an album's title, subtitle or artist
 function queueAlbumJob(body) {
-  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  let j;
   const spec = { action: body.action, id: body.id, title: str(body.title, 80), subtitle: str(body.subtitle, 80), artist: str(body.artist, 120), folder: str(body.folder, 1000) };
   if (spec.action === "edit" && !albumList().some(x => x.id === spec.id)) return [400, "unknown album"];
   if (spec.action === "add" && !(path.isAbsolute(spec.folder) && fs.existsSync(spec.folder) && fs.statSync(spec.folder).isDirectory())) return [400, "that folder doesn't exist"];
   if (!["add", "edit"].includes(spec.action)) return [400, "unknown action"];
-  fs.mkdirSync(JOB_DIR, { recursive: true });
-  const specFile = path.join(JOB_DIR, `${id}.json`);
-  fs.writeFileSync(specFile, JSON.stringify(spec));
-  j = { kind: "album", action: spec.action, specFile, label: spec.action === "add" ? `Adding ${spec.title || "the album"}` : `Saving ${spec.title}`, args: ["album", specFile] };
-  Object.assign(j, { id, album: spec.action === "edit" ? spec.id : null, status: "queued", p: 0, msg: "Waiting", log: [], result: null, error: null });
-  jobs.push(j); runNext();
+  const j = addJob({ kind: "album", action: spec.action, album: spec.action === "edit" ? spec.id : null,
+    label: spec.action === "add" ? `Adding ${spec.title || "the album"}` : `Saving ${spec.title}`, args: ["album"] }, spec);
   return [200, publicJob(j)];
 }
 
@@ -198,13 +221,12 @@ function queueJob(body) {
   const a = album(body.album);
   if (!a) return [400, "unknown album"];
   const names = new Set(a.tracks.map(t => t.name)), kinds = a.version_kinds || ["Slowed + Reverb", "Sped Up", "Other Room", "Bass Boosted", "Max Bass Boost"];
-  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   let j;
   if (body.kind === "make") {
     const tracks = (body.tracks || []).filter(n => names.has(n)), versions = (body.versions || []).filter(v => kinds.includes(v));
     if ((body.tracks || []).length !== tracks.length || (body.versions || []).length !== versions.length) return [400, "unknown track or version"];
-    j = { kind: "make", tracks, versions, label: versions.length === 1 ? `Making ${versions[0]}` : "Making versions",
-      args: ["make", "--album", a.id, ...tracks.flatMap(t => ["--track", t]), ...versions.flatMap(v => ["--version", v])] };
+    j = addJob({ kind: "make", album: a.id, tracks, versions, label: versions.length === 1 ? `Making ${versions[0]}` : "Making versions",
+      args: ["make", "--album", a.id, ...tracks.flatMap(t => ["--track", t]), ...versions.flatMap(v => ["--version", v])] });
   } else if (body.kind === "export") {
     const items = (body.items || []).filter(i => i && names.has(i.id)).map(i => ({ id: i.id, title: str(i.title, 200) || a.tracks.find(t => t.name === i.id).title }));
     if (!items.length) return [400, "nothing to export"];
@@ -213,10 +235,7 @@ function queueJob(body) {
     const isrc = Object.fromEntries(Object.entries(body.isrc || {}).filter(([k, v]) => names.has(k) && /^[A-Z]{2}-?[A-Z0-9]{3}-?\d{2}-?\d{5}$/i.test(v)).map(([k, v]) => [k, v.toUpperCase()]));
     const spec = { album: a.id, what: ["songs", "album", "both"].includes(body.what) ? body.what : "songs", version: kinds.includes(body.version) ? body.version : "",
       items, gap: Math.min(10, Math.max(0, +body.gap || 0)), formats: formats.length ? formats : ["wav"], meta, isrc, cover: body.cover ? coverFile(a.id) || null : null };
-    fs.mkdirSync(JOB_DIR, { recursive: true });
-    const specFile = path.join(JOB_DIR, `${id}.json`);
-    fs.writeFileSync(specFile, JSON.stringify(spec));
-    j = { kind: "export", what: spec.what, specFile, label: spec.what === "album" ? "Rendering the full album" : "Exporting", args: ["export", specFile] };
+    j = addJob({ kind: "export", album: a.id, what: spec.what, label: spec.what === "album" ? "Rendering the full album" : "Exporting", args: ["export"] }, spec);
   } else if (body.kind === "trace") {
     const items = (body.items || []).filter(i => i && names.has(i.id)).map(i => ({ id: i.id, title: str(i.title, 200) || a.tracks.find(t => t.name === i.id).title }));
     const recipients = [...new Set((Array.isArray(body.recipients) ? body.recipients : []).map(r => str(r, 60).replace(/[\\/:*?"<>|]/g, "").trim()).filter(Boolean))].slice(0, 50);
@@ -229,14 +248,9 @@ function queueJob(body) {
     const spec = { album: a.id, items, version: kinds.includes(body.version) ? body.version : "", recipients, phrase, clips,
       voice: body.voice === "female" ? "female" : "male", say_name: !!body.say_name,
       density: ["light", "normal", "heavy"].includes(body.density) ? body.density : "normal", formats: formats.length ? formats : ["wav"] };
-    fs.mkdirSync(JOB_DIR, { recursive: true });
-    const specFile = path.join(JOB_DIR, `${id}.json`);
-    fs.writeFileSync(specFile, JSON.stringify(spec));
     const n = items.length * recipients.length;
-    j = { kind: "trace", specFile, label: `Trace Tags: ${n} cop${n === 1 ? "y" : "ies"}`, args: ["trace", specFile] };
+    j = addJob({ kind: "trace", album: a.id, label: `Trace Tags: ${n} cop${n === 1 ? "y" : "ies"}`, args: ["trace"] }, spec);
   } else return [400, "unknown job"];
-  Object.assign(j, { id, album: a.id, status: "queued", p: 0, msg: "Waiting", log: [], result: null, error: null });
-  jobs.push(j); runNext();
   return [200, publicJob(j)];
 }
 
@@ -283,16 +297,9 @@ function tracePreview(req, res) {
 }
 function traceCheck(req, res, ext) {
   if (!["wav", "flac", "aif", "aiff", "mp3", "m4a"].includes(ext)) return json(res, { error: "WAV, FLAC, AIFF, MP3 or M4A" }, 415);
-  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  saveBody(req, path.join(TRACE_TMP, `check-${id}.${ext}`), 300e6, file => {
+  saveBody(req, path.join(TRACE_TMP, `check-${newId()}.${ext}`), 300e6, file => {
     if (!file) return json(res, { error: "that file is empty or too big" }, 413);
-    fs.mkdirSync(JOB_DIR, { recursive: true });
-    const specFile = path.join(JOB_DIR, `${id}.json`);
-    fs.writeFileSync(specFile, JSON.stringify({ file }));
-    const j = { id, kind: "trace-check", album: null, specFile, label: "Checking whose copy it is", args: ["trace-check", specFile],
-      status: "queued", p: 0, msg: "Waiting", log: [], result: null, error: null };
-    jobs.push(j); runNext();
-    json(res, publicJob(j));
+    json(res, publicJob(addJob({ kind: "trace-check", label: "Checking whose copy it is", args: ["trace-check"] }, { file })));
   });
 }
 
@@ -309,7 +316,7 @@ function demoExport(fmt, res, demo) {
     return f ? json(res, { ready: true, url: `/api/demo-export/file?fmt=${fmt}`, name: path.basename(f), size: fs.statSync(f).size }) : json(res, { error: "not prepared" }, 404);
   }
   // a job still writing the file comes first, or a half-written file would be served
-  const live = jobs.find(j => j.demo === fmt && ["queued", "running"].includes(j.status));
+  const live = jobs.find(j => j.demo === fmt && isLive(j));
   if (live) return json(res, { ready: false, job: publicJob(live) });
   const f = demoExportFile(fmt);
   if (f) return json(res, { ready: true, url: `/api/demo-export/file?fmt=${fmt}`, name: path.basename(f), size: fs.statSync(f).size });
@@ -319,13 +326,7 @@ function demoExport(fmt, res, demo) {
   const spec = { album: "demo", what: "songs", version: "", items: [{ id: t.name, title: t.title }], gap: 0, formats: [fmt],
     meta: { artist, album_artist: artist, album: a.title, year, genre: "", label: "", composer: artist, copyright: artist ? `© ${year} ${artist}. All rights reserved.` : "", comment: "Exported by GODMIX" },
     isrc: t.isrc ? { [t.name]: t.isrc } : {}, cover: fs.existsSync(cover) ? cover : null, folder: DEMO_EXPORT };
-  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  fs.mkdirSync(JOB_DIR, { recursive: true });
-  const specFile = path.join(JOB_DIR, `${id}.json`);
-  fs.writeFileSync(specFile, JSON.stringify(spec));
-  const j = { id, kind: "export", demo: fmt, album: "demo", specFile, label: `Preparing the ${fmt.toUpperCase()} download`, args: ["export", specFile],
-    status: "queued", p: 0, msg: "Waiting", log: [], result: null, error: null };
-  jobs.push(j); runNext();
+  const j = addJob({ kind: "export", demo: fmt, album: "demo", label: `Preparing the ${fmt.toUpperCase()} download`, args: ["export"] }, spec);
   return json(res, { ready: false, job: publicJob(j) });
 }
 

@@ -89,7 +89,7 @@ python render.py                              # master the album with "masters" 
 python app/build_data.py demo                 # refresh the app
 python app/build_public.py                    # the online demo's MP3s and download (app/cache/public)
 npm run demo                                  # the online demo, locally: http://localhost:8334
-npm test                                      # server tests
+npm test                                      # server and state machine tests
 npm run design                                # rebuild logos, icons and banners (design/)
 ```
 
@@ -100,7 +100,7 @@ app/            the GODMIX app: server.js, build_data.py, jobs.py (make versions
 demo/000/       the demo album, 000, as FLAC (© Kyler Simzer, all rights reserved; see demo/README.md)
 design/         brand: mark #136 "Three dials", lockups, icons, banners, screenshots, and their generator
 docs/APP.md     how the app works: playback, API, jobs, data and state formats, shortcuts
-tests/          server tests (node --test)
+tests/          server and state machine tests (node --test)
 LICENSE         the MIT License (the code only: not the demo audio, not the GODMIX or stems.fm marks)
 NOTICE.md       copyright, licences and third-party software
 *.py            mastering and version scripts; albums.json, versions_cfg.json and render_cfg.json are their settings (the demo's and the defaults)

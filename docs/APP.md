@@ -28,6 +28,8 @@ albums.json + local/albums.json ──► app/build_data.py ──► app/data/<
 | `app/web/css/app.css`, `home.css` | Styles. |
 | `app/web/js/app.js` | The app: loading, rendering, running order, undo, marks, statuses, exports, deep links, media keys. |
 | `app/web/js/engine.js` | Audio engine: two `<audio>` elements on one clock through Web Audio (A/B gains, mono and phone modes, meter, loops). |
+| `app/web/js/sequence.mjs` | The play-through sequencer: gaps between songs and Hear transition, as one state machine (see [State machines](#state-machines)). No page code, so `tests/sequence.test.mjs` drives it directly. |
+| `app/web/js/jobwatch.mjs` | Which jobs changed status since the app last looked, so each finish is reported once (`tests/jobwatch.test.mjs`). |
 | `app/web/js/command.js` | Command menu, shortcut sheet, row menu and every keyboard shortcut (`SHORTCUTS` drives the sheet). |
 | `app/web/js/draw.js` | Canvas drawing: waveforms and the energy arc. |
 | `app/web/js/analysis.js` | Transition chips (tempo, Camelot key, energy at the seam) and the clean-up summary. |
@@ -42,11 +44,66 @@ albums.json + local/albums.json ──► app/build_data.py ──► app/data/<
 - Switching A/B is a 12 ms gain crossfade. **Match** turns B down by the loudness difference (integrated LUFS from the data).
 - **Loops and marks are stored in song time**, so they stay on the same moment when you switch versions.
 - **Listening modes:** stereo, mono (a fold-down), and phone (mono, 350 Hz high-pass, 5 kHz low-pass).
-- **Play through** waits the gap, then plays the next song. **Hear transition** plays the last N seconds of one song, the gap, then N seconds of the next.
+- **Play through** waits the gap, then plays the next song. Pausing during the gap holds it, and Play goes straight on to the next song. **Hear transition** plays the last N seconds of one song, the gap, then N seconds of the next.
+- **A loop belongs to its song:** playing another song clears it; switching versions of the same song keeps it.
 - **Instant starts:**
   - The engine has two pairs of `<audio>` elements. The standby pair preloads the next song in the running order (or the next song of a transition preview), so starting it is just a swap.
   - With a 0 s gap, the next song starts about 30 ms before the current one ends, instead of waiting for the browser's `ended` event. That is as close to gapless as `<audio>` gets.
 - **Clicking a song** plays it. Clicking the song that's playing pauses or resumes it.
+
+## State machines
+
+Everything in the app that changes over time is one of these, each with its states written down where it lives. In the app, `godmix.state()` in the browser console shows them all at once as plain data, and `godmix.engine()` shows what the audio elements themselves are doing. Check them there when testing a change.
+
+**The album lifecycle** (`G.phase` in `app.js`):
+
+```
+starting ──► empty                      (no albums: the "build the data first" card)
+    └──────► loading ──► ready ──► loading ──► ready …   (every album switch)
+```
+
+- In **loading**, nothing renders, plays or saves. In **ready**, `G.data` and `G.S` belong to `G.aid`, and every change is saved to that album.
+- Each `openAlbum()` takes a ticket. A load overtaken by a newer one stops where it is, so the last album you clicked wins.
+- Saving only happens in **ready**. Before this, two quick clicks in the sidebar could save one album's notes and running order under another album's name.
+- Re-reading data after a job (`reloadData`) is dropped if another album opened meanwhile.
+
+**Between songs** (`seq`, `sequence.mjs`):
+
+```
+idle ── a song ends, Play through on ──────► gap ── the gap is up ──► the next song ──► idle
+tail ── (Hear transition: a song's last N s) ends ► gap ── the gap is up ──► head ── N s ──► idle
+gap  ── pause ──► held ── play ──► straight on to what was next
+any  ── a song started by hand, Next, another album ──► idle
+```
+
+- **gap** counts as playing: the player shows Pause and the waveform keeps drawing.
+- **held** shows "paused · next: …". Back (⏮) between songs restarts the song that just ended.
+- With a 0 s gap there's no gap state: the next song starts about 30 ms before this one ends.
+
+**Jobs** (`app/server.js` and `jobwatch.mjs`):
+
+```
+queued ──► running ──► done
+                 └───► error            (the app adds "gone": a live job missing after a server restart)
+```
+
+- On the server, `addJob()` is the only way to make a job, `startJob()` the only way to start one (one at a time), and `endJob()` the only way to finish one. A move outside these arrows is logged and refused.
+- A Python that can't start ends the job in **error**, so nothing is ever stuck running.
+- The app reports each finish once, including a job that finishes before its first poll. If the server stops answering while a job runs, the sidebar says so and keeps checking. If the job is gone when the server comes back, a toast says it stopped.
+
+**The audio engine** (`E`, `engine.js`):
+- **What's loaded and heard:** `cur` and `ver`, `side` (A or B) and `blend`.
+- **`wantPlay`:** whether it should be playing, as opposed to what the elements report.
+- **`loop`:** `{a, b, on}` or null, cleared by loading another song.
+- **`stopAt`:** a preview's stop point, cleared by every load.
+- **Settings:** `mode` (one of `MODES`: stereo, mono, phone), `match` and `volume`.
+
+**The analysis panel** (`editing` in `app.js`):
+- It is either viewing (`editing = null`) or correcting one track's values.
+- What you've typed survives the panel being redrawn, for example when a version finishes or the song changes version.
+- Selecting another track or album ends the edit.
+
+**Statuses** cycle `''` → `work` → `done` (`STATUS_ORDER` in `util.js`); **listening modes** cycle `MODES` (`M`).
 
 ## HTTP API
 
@@ -62,7 +119,7 @@ albums.json + local/albums.json ──► app/build_data.py ──► app/data/<
 | `GET /api/state?album=<id>` | Saved state. |
 | `POST /api/state?album=<id>` | Save state. Needs the header `X-God-Mix: 1`. |
 | `POST /api/open` | `{album, folder: orig\|master\|versions, sub?}` opens a folder; `{album, track, where, version?}` reveals a file; `{job}` opens a finished export's folder. Needs `X-God-Mix: 1`. |
-| `GET /api/jobs` | Recent jobs, newest last: `{id, kind, album, label, status: queued\|running\|done\|error, p, msg, result, error}`. |
+| `GET /api/jobs` | Recent jobs, newest last: `{id, kind, album, label, status: queued\|running\|done\|error, p, msg, result, error}` (see [State machines](#state-machines)). They live in memory, so a server restart forgets them. |
 | `POST /api/jobs` | Queue `{kind: "make", album, tracks?, versions?}` (empty means all), `{kind: "export", album, what, version, items, gap, formats, meta, isrc, cover}`, `{kind: "album", action: "add" | "edit", id?, title, subtitle, artist, folder?}`, or `{kind: "trace", album, items, version, recipients, phrase, voice, say_name, clips, density, formats}`. The server checks every track id, version and format against the album data. Needs `X-God-Mix: 1`. |
 | `POST /api/folder` | `{path}`: the audio files in a folder, to preview a new album. Needs `X-God-Mix: 1`. |
 | `GET /api/demo-export?fmt=wav\|flac\|mp3` | The homepage's download: `{ready, url, name, size}` once the file exists, else `{ready: false, job}` after queueing the export. `GET /api/demo-export/file?fmt=` serves it as a download. |

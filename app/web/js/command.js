@@ -1,5 +1,6 @@
 // The command menu (Ctrl/⌘ K), the keyboard shortcut sheet (?), the row menu and every keyboard shortcut.
 import { $, esc, fmt, pad2, ICON, STATUS, STATUS_ORDER, MOD, isMac } from './util.js';
+import { MODES } from './engine.js';
 
 // [group, keys, label] — the shortcut sheet is drawn from this list, so it can't drift from the code.
 export const SHORTCUTS = [
@@ -213,7 +214,7 @@ export function initCommands(app) {
     else if (k === 'Tab' && E.cur) { done(); app.setSide(E.side === 'A' ? 'B' : 'A'); }
     else if (/^[0-9]$/.test(k)) app.versionByIndex(+k);
     else if (k === 'v' || k === 'V') { const t = app.track(G.sel || E.cur), vs = t?.versions || [], cur = E.cur === (G.sel || E.cur) && E.ver ? vs.indexOf(E.ver) + 1 : 0; app.versionByIndex((cur + 1) % (vs.length + 1)); }
-    else if (k === 'm' || k === 'M') { const ms = ['stereo', 'mono', 'phone'], next = ms[(ms.indexOf(E.mode) + 1) % 3]; app.setMode(next); }
+    else if (k === 'm' || k === 'M') app.setMode(MODES[(MODES.indexOf(E.mode) + 1) % MODES.length]);
     else if (k === 'g' || k === 'G') app.toggleMatch();
     else if (k === 'c' || k === 'C') app.toggleCont();
     else if (k === 'l' || k === 'L') app.toggleLoop();

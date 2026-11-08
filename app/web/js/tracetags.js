@@ -187,14 +187,10 @@ export function openTraceTags(app, { scope } = {}) {
       const r = await fetch(`/api/trace/check?ext=${encodeURIComponent(ext)}`, { method: 'POST', headers: { 'X-God-Mix': '1' }, body: f });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || r.status);
-      app.watchJobs();
-      for (;;) {
-        await new Promise(res => setTimeout(res, 700));
-        if (!layer.isConnected) return;
-        const k = (await api.json('/api/jobs')).find(x => x.id === j.id);
-        if (!k || k.status === 'error') throw new Error(k?.error || 'the check stopped');
-        if (k.status === 'done') return showMatch(k.result.match, f.name);
-      }
+      const k = await app.waitJob(j);              // the app's job watch: done, error, or gone (the server restarted)
+      if (!layer.isConnected) return;
+      if (k.status !== 'done') throw new Error(k.status === 'gone' ? 'the GODMIX server was restarted' : k.error || 'the check stopped');
+      showMatch(k.result.match, f.name);
     } catch (err) { result.className = 'tt-result bad'; result.innerHTML = `Couldn’t check it: ${esc(err.message)}`; }
   };
   const showMatch = (m, file) => {

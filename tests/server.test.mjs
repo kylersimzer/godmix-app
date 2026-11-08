@@ -19,6 +19,7 @@ fs.writeFileSync(path.join(DATA, 'T1.json'), JSON.stringify({ id: 'T1', title: '
 
 process.env.GODMIX_DATA_DIR = DATA;
 process.env.GODMIX_STATE_DIR = STATE;
+process.env.GODMIX_PYTHON = path.join(tmp, 'no-python-here');        // jobs can't start: tests the error path, runs nothing
 const { createServer } = createRequire(import.meta.url)('../app/server.js');
 let server, base;
 before(() => new Promise(ok => { server = createServer().listen(0, '127.0.0.1', () => { base = `http://127.0.0.1:${server.address().port}`; ok(); }); }));
@@ -137,6 +138,19 @@ test('answers only requests addressed to localhost (no DNS rebinding)', async ()
 
 test('the demo export starts a job, so it needs the header like every write', async () => {
   assert.equal((await get('/api/demo-export?fmt=mp3')).status, 403);
+});
+
+test('a job whose Python can\'t start ends in error (never stuck running), and the next one still runs', async () => {
+  const start = async () => { const r = await post('/api/jobs', { kind: 'make', album: 'T1' }); assert.equal(r.status, 200); return (await r.json()).id; };
+  const ids = [await start(), await start()];
+  let list = [];
+  for (let i = 0; i < 100 && !(list.length === 2 && list.every(j => j.status === 'error')); i++) {
+    await new Promise(ok => setTimeout(ok, 20));
+    list = (await (await get('/api/jobs')).json()).filter(j => ids.includes(j.id));
+  }
+  assert.deepEqual(list.map(j => j.status), ['error', 'error']);
+  assert.match(list[0].error, /Couldn't start Python/);
+  assert.ok(list.every(j => j.started && j.ended >= j.started));
 });
 
 test('/soon, the old "coming soon" page, sends people to the GitHub repo', async () => {

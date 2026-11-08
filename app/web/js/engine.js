@@ -9,9 +9,16 @@
 //                       paused. (Keeping both running and re-seeking the hidden one stutters.)
 //
 // Loops, marks and stop points are kept in song time (the master's clock), so they stay put when you
-// switch versions. Listening modes: stereo, mono (fold-down), phone (mono, 350 Hz–5 kHz). A meter reads
-// the output peaks. `setBlend` moves a crossfade position for sliders; `setSide` is all one or the other.
+// switch versions. A loop belongs to its song: loading another song clears it (loading the same song as
+// another version keeps it). Listening modes: stereo, mono (fold-down), phone (mono, 350 Hz–5 kHz). A meter
+// reads the output peaks. `setBlend` moves a crossfade position for sliders; `setSide` is all one or the other.
+//
+// The engine's state, all on E: cur and ver (what's loaded), side and blend (what you hear), wantPlay (whether
+// it should be playing, as opposed to what the elements report), loop ({a, b, on} or null), stopAt (a stop point
+// for previews, cleared by every load), mode, match and volume. E.debug() reports it with the elements' own.
 import { clamp } from './util.js';
+
+export const MODES = ['stereo', 'mono', 'phone'];
 
 export function createEngine({ urlFor, track, onEnded = () => {}, onChange = () => {} }) {
   const mk = () => { const a = new Audio(); a.preload = 'auto'; return a; };
@@ -98,6 +105,7 @@ export function createEngine({ urlFor, track, onEnded = () => {}, onChange = () 
   function load(name, { at = 0, play = false, version = null } = {}) {
     const k = keyOf(name, version);
     clearTimeout(parkTimer);
+    if (name !== E.cur) E.loop = null;          // a loop is a stretch of one song
     E.cur = name; E.ver = version; E.stopAt = null; E.wantPlay = false;
     if (S().key === k) {                         // already buffered on standby: swap pairs
       const old = P(); old.A.pause(); old.B.pause();
@@ -129,7 +137,7 @@ export function createEngine({ urlFor, track, onEnded = () => {}, onChange = () 
   E.remaining = () => (E.cur ? dur() - bTime() : Infinity);
   E.setSide = s => { const from = E.side; E.side = s; E.blend = null; syncSides(from); gains(); onChange('side'); };
   E.setBlend = x => { const from = E.side; E.blend = clamp(x, 0, 1); E.side = x < 0.5 ? 'A' : 'B'; syncSides(from); gains(); onChange('side'); };
-  E.setMode = m => { E.mode = m; route(); onChange('mode'); };
+  E.setMode = m => { E.mode = MODES.includes(m) ? m : 'stereo'; route(); onChange('mode'); };
   E.setMatch = v => { E.match = v; gains(); onChange('match'); };
   E.setVolume = v => { E.volume = clamp(v, 0, 1); if (out) out.gain.setTargetAtTime(E.volume, ctx.currentTime, 0.01); onChange('volume'); };
   E.setLoop = (a, b) => { E.loop = a == null ? null : { a: Math.min(a, b), b: Math.max(a, b), on: true }; onChange('loop'); };

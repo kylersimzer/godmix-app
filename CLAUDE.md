@@ -46,7 +46,7 @@ node --version                         # need 20+ (developed on 24)
 .venv/Scripts/python --version         # Windows venv, Python 3.12; macOS/Linux: .venv/bin/python
 .venv/Scripts/python -c "import numpy, scipy, soundfile, librosa, pedalboard, mutagen"   # requirements.txt
 ls app/data                            # albums.json + <id>.json; if missing: python app/build_data.py (a fresh clone builds the demo)
-npm test                               # server tests, need nothing installed
+npm test                               # server and state machine tests, need nothing installed
 ```
 
 - The app has **no npm dependencies**. Don't add any; the zero-install setup is deliberate.
@@ -69,7 +69,7 @@ npm test                               # server tests, need nothing installed
 | `render.py`, `sweep.py`, `render_cfg.json` | Masters for the album with `"masters"` set. `render_cfg.json` holds defaults; your own go in `local/render_cfg.json`. |
 | `version_design.py` → `versions_cfg.json` + `plans/<id>.json` | Per-song version design (speed, shelf, reverb). Per-song overrides go in `albums.<id>.overrides.<title>`: the demo's in `versions_cfg.json`, your albums' in `local/versions_cfg.json` (versions.py merges them on load and splits them on save). Plans: `plans/demo.json`, the rest in `local/plans/`. |
 | `versions.py` | Renders versions into `<album folder>/Versions/{24-bit 48kHz,16-bit 44.1kHz}/`. Optional recipe keys: `speed`, `deess`, `high_shelf`, `reverb`, `mono`, `lowpass_hz`, `highpass_hz`, `tail_s`, `target_offset`, `bass` (see `bass_boost`), `target_lufs` (a fixed level instead of the song's own), `clip_db`. |
-| `app/` | See docs/APP.md. `app/web/js/app.js` is the hub; `engine.js` is audio (two element pairs, one preloading); `command.js` is keyboard and menus; `export.js` is the export dialog. |
+| `app/` | See docs/APP.md. `app/web/js/app.js` is the hub; `engine.js` is audio (two element pairs, one preloading); `sequence.mjs` is what happens between songs; `jobwatch.mjs` tracks jobs; `command.js` is keyboard and menus; `export.js` is the export dialog. |
 | `app/jobs.py` | What the app's buttons run: `make` (design and render missing versions), `export` (tagged files and full-album renders), `album`, `trace` and `trace-check` (Trace Tags). It can also be run by hand; see its docstring. |
 | `trace_tags.py` | Trace Tags: a tagged copy per person, with tag times only that copy has, and `identify` for a leaked file. The ledger (`app/state/trace-tags.json`) and the secret key (`app/state/trace-key.txt`) belong to the user: never delete or reset them. Test with `GODMIX_STATE_DIR` pointing somewhere else. See docs/APP.md. |
 | `demo/000/` | The demo album (000) as FLAC, the only audio in git. **© Kyler Simzer, all rights reserved** (demo/README.md, NOTICE.md). Its versions and exports are written beside it and ignored by git. |
@@ -84,7 +84,8 @@ npm test                               # server tests, need nothing installed
 - **A change that alters the sound of a master or version must say so,** with before and after measurements (LUFS, true peak, tempo or tuning), and must back up the old render rather than delete it.
 - **Keep the app dependency-free and fast.** Plain ES modules, no build step. Match the existing style: small helpers in `util.js`, tokens in `tokens.css`, and every shortcut listed in `SHORTCUTS`.
 - **Design:** stems.fm's look (black, one off-white ink, Geist; colour only from the music or a status), finished to linear.app's standard of polish. Linear is the reference for feel only, not for features.
-- **Verify in the browser:** run the app, check the console for errors, and try the feature. A deep link such as `/app#/demo/4` gets straight to a track.
+- **Verify in the browser:** run the app, check the console for errors, and try the feature. A deep link such as `/app#/demo/4` gets straight to a track. `godmix.state()` in the console shows every state machine at once (album phase, what's playing, what's pending between songs, live jobs); read it instead of guessing from the screen. Test with `GODMIX_STATE_DIR` pointing at a copy, never the user's own `app/state`.
+- **State machines stay explicit.** Anything that changes over time gets named states and one place that moves between them (docs/APP.md, "State machines"), not a set of flags read together. Keep the logic free of page code where you can (like `sequence.mjs`), so `npm test` can drive it.
 
 ## Shortcuts for common requests
 

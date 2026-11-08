@@ -12,8 +12,18 @@
 // The online demo (server.js --demo marks the page <html class="demo">) has the demo album only and keeps the state
 // above in this browser (localStorage, godmix.demo.<album>). What needs your own machine (making versions, exports,
 // adding or editing albums) says so instead of running, and there are no folders to open.
+//
+// The app's moving parts are explicit state machines, each documented where it lives (and in docs/APP.md):
+//   G.phase    the album lifecycle: starting → empty | loading → ready (below, under "loading")
+//   seq        what happens when a song ends: play-through gaps and Hear transition (sequence.mjs)
+//   watch      jobs: queued → running → done | error, or gone if the server restarts (jobwatch.mjs)
+//   E          the audio engine: A/B sides, one or two clocks, loops (engine.js)
+//   editing    the analysis panel: viewing, or correcting one track's values
+// In the browser console, godmix.state() shows them all at once.
 import { $, $$, esc, fmt, fmtLong, pad2, enc, clamp, debounce, toast, tooltips, store, ICON, STATUS, STATUS_ORDER, MOD } from './util.js';
 import { createEngine } from './engine.js';
+import { createSequencer } from './sequence.mjs';
+import { createJobWatch, isLive, FINISHED } from './jobwatch.mjs';
 import { drawWave, drawArc } from './draw.js';
 import { initCommands } from './command.js';
 import { transitionChips, edgeSummary } from './analysis.js';
@@ -23,7 +33,7 @@ import { openAlbumDialog } from './albumdialog.js';
 import { openTraceTags } from './tracetags.js';
 
 const DEMO = document.documentElement.classList.contains('demo');
-const G = { albums: [], aid: null, data: null, byName: {}, defaultOrder: [], S: null, sel: null, gapTimer: null, pending: null, undo: [], redo: [], version: '' };
+const G = { phase: 'starting', ticket: 0, albums: [], aid: null, data: null, byName: {}, defaultOrder: [], S: null, sel: null, undo: [], redo: [], version: '' };
 const FRESH = () => ({ order: [], notes: {}, marks: {}, status: {}, titles: {}, fixes: {}, meta: null, isrc: {}, pad: null, albumNotes: '', settings: { cont: false, gap: 2, tlen: 10, match: false, mode: 'stereo' }, last: null });
 const PREFS = { theme: store.get('theme', null), volume: store.get('volume', 0.9), insp: store.get('insp', true), trans: store.get('trans', true) };
 
@@ -36,9 +46,17 @@ const pretty = n => G.S?.titles?.[n] || track(n)?.title || String(n).replace(/^\
 const audioUrl = (kind, n, v) => `/audio/${enc(G.aid)}/${kind}/${enc(n)}` + (v ? `?v=${enc(v)}` : '');
 const gap = () => +G.S.settings.gap;
 const E = createEngine({ urlFor: audioUrl, track, onEnded, onChange });
+// what happens when a song ends (sequence.mjs): the app supplies the effects
+const seq = createSequencer({
+  gap, cont: () => !!G.S?.settings.cont, next: () => nextName(), title: n => pretty(n), play: n => play(n),
+  stopAt: s => { E.stopAt = s; },
+  note: text => { const el = $('#gapNote'); el.hidden = !text; if (text) el.textContent = text; },
+  changed: () => { if (G.phase === 'ready') { renderPlayer(); preloadNext(); } },
+});
 
 // ───────────────────────────────────────────── saving
-const saveNow = (keepalive = false) => G.aid && G.S && (DEMO ? store.set(`demo.${G.aid}`, G.S)
+// Only in the ready phase, when G.S is certainly G.aid's state (see the album lifecycle below).
+const saveNow = (keepalive = false) => G.phase === 'ready' && G.S && (DEMO ? store.set(`demo.${G.aid}`, G.S)
   : api.post(`/api/state?album=${enc(G.aid)}`, G.S, keepalive).catch(() => toast('Couldn’t save. Is the GODMIX server still running?')));
 // online, the things that need GODMIX on your own machine explain that instead of running
 const needsInstall = what => toast(`${what} comes with GODMIX on your own computer: free and open source.`,
@@ -47,7 +65,15 @@ const save = debounce(() => saveNow(), 400);
 function rememberPosition() { if (G.S && E.cur) G.S.last = { track: E.cur, t: +E.songTime().toFixed(2) }; }
 addEventListener('pagehide', () => { rememberPosition(); saveNow(true); });
 
-// ───────────────────────────────────────────── loading
+// ───────────────────────────────────────────── loading: the album lifecycle
+// G.phase is always one of:
+//   starting  reading the album list
+//   empty     there are no albums (showEmpty)
+//   loading   an album's data and saved state are on their way: nothing renders, plays or saves
+//   ready     G.data and G.S belong to G.aid, and every change is saved to it
+// openAlbum() is the only way into loading and out of it. Each call takes a ticket; a load that a newer one
+// overtook (a second click before the first album arrived) stops where it is, so the latest album wins and one
+// album's notes are never saved under another album's name.
 async function init() {
   tooltips();
   applyTheme(PREFS.theme);
@@ -64,18 +90,27 @@ async function init() {
 }
 
 async function openAlbum(aid, { trackN = null } = {}) {
-  if (G.aid) { rememberPosition(); save.flush(); }
-  G.loading = true;          // no redraws until the new album is fully in place
-  clearGap(); E.unload(); G.sel = null;
+  const ticket = ++G.ticket, was = G.phase === 'ready' ? G.aid : null;
+  if (was) { rememberPosition(); save.flush(); }       // the album you're leaving, saved while it's still in place
+  G.phase = 'loading';
+  seq.reset(); E.unload(); G.sel = null; editing = null;
   G.aid = aid; store.set('album', aid);
-  G.data = await api.json(`/data/${enc(aid)}.json`);
+  let data, st = {};
+  try { data = await api.json(`/data/${enc(aid)}.json`); }
+  catch (err) {
+    if (ticket !== G.ticket) return;
+    if (!was || was === aid) throw err;
+    toast(`Couldn’t open that album. Rebuild its data with: python app/build_data.py ${aid}`, { ms: 8000 });
+    return openAlbum(was);
+  }
+  try { st = DEMO ? store.get(`demo.${aid}`, {}) || {} : await api.json(`/api/state?album=${enc(aid)}`); } catch {}
+  if (ticket !== G.ticket) return;                        // another album was opened meanwhile: it wins
+  G.data = data;
   G.byName = {}; G.data.tracks.forEach(t => (G.byName[t.name] = t));
   G.defaultOrder = G.data.tracks.map(t => t.name);
-  G.S = FRESH(); G.undo = []; G.redo = [];
-  try {
-    const st = DEMO ? store.get(`demo.${aid}`, {}) || {} : await api.json(`/api/state?album=${enc(aid)}`);
-    G.S = { ...G.S, ...st, settings: { ...G.S.settings, ...(st.settings || {}) } };
-  } catch {}
+  G.undo = []; G.redo = [];
+  const fresh = FRESH();
+  G.S = { ...fresh, ...st, settings: { ...fresh.settings, ...(st.settings || {}) } };
   for (const k of ['notes', 'marks', 'status', 'titles', 'isrc', 'fixes']) G.S[k] = G.S[k] && typeof G.S[k] === 'object' ? G.S[k] : {};
   applyFixes();
   pad.render();
@@ -89,7 +124,7 @@ async function openAlbum(aid, { trackN = null } = {}) {
   const last = G.S.last && G.byName[G.S.last.track] ? G.S.last : null;
   G.sel = byN?.name || last?.track || G.S.order[0];
   if (last && (!byN || byN.name === last.track)) E.load(last.track, { at: last.t });     // pick up where you left off (paused)
-  G.loading = false;
+  G.phase = 'ready';
   if (DEMO) $('#demoWhat').textContent = `${G.data.title}${G.data.artist ? ' by ' + G.data.artist : ''}`;
   renderAll();
   pollJobs();
@@ -98,6 +133,7 @@ async function openAlbum(aid, { trackN = null } = {}) {
 }
 
 function showEmpty() {
+  G.phase = 'empty';
   $('#albumTitle').textContent = 'No albums yet';
   $('#page').innerHTML = `<div class="empty card"><b>Build the album data first</b>GODMIX reads the albums listed in <code>albums.json</code> (the demo) and <code>local/albums.json</code> (yours).<br><br>
     Run <code>python app/build_data.py</code> from the repo folder, then reload this page.<br>See README.md for the full setup.</div>`;
@@ -178,6 +214,8 @@ function renderInspector() {
   const { st } = startTimes(), i = G.S.order.indexOf(n), status = G.S.status[n] || '', isCur = n === E.cur;
   const verOn = isCur ? (E.ver?.label || '') : null, marks = (G.S.marks[n] || []).slice().sort((a, b) => a.t - b.t);
   const edge = edgeSummary(t);
+  // correcting this track's analysis: what's typed so far survives the panel being redrawn (a version finishing, a play)
+  const draft = editing === n ? $$('#inspector [data-fix]').map(x => [x.dataset.fix, x.value, x === document.activeElement]) : [];
   const vrow = (label, k, meta, on) => `<button class="vrow${on ? ' on' : ''}" data-ver="${esc(label)}"><span class="k"><kbd>${k}</kbd><span>${esc(label || (G.data.released ? 'Album version' : 'Album master'))}</span></span><span class="mono">${meta}</span><span class="mono">${on && !E.paused() ? '▶' : ''}</span></button>`;
   el.innerHTML = `<div class="insp">
     <div class="over"><button class="status ${status}" data-act="status" data-tip="${STATUS[status].label}" data-key="S">${STATUS[status].icon}</button>
@@ -203,6 +241,7 @@ function renderInspector() {
       ${G.data.released ? '' : `<button class="btn line" data-reveal="orig">${ICON.file}Original</button>`}
       ${(t.versions || []).length ? `<button class="btn line" data-reveal="version">${ICON.file}${isCur && E.ver ? esc(E.ver.label) : 'Version'}</button>` : ''}
     </div></section>`}</div>`;
+  for (const [k, v, had] of draft) { const x = $(`#inspector [data-fix="${k}"]`); if (x) { x.value = v; if (had) x.focus(); } }
   drawMini();
 }
 
@@ -226,6 +265,8 @@ function applyFixes() {
     t.after = { ...m.after, ...Object.fromEntries(['I', 'loud', 'LRA', 'TP'].filter(k => f[k] != null).map(k => [k, f[k]])) };
   }
 }
+// The analysis panel is viewing (editing = null) or correcting one track (editing = its id). Edit, Cancel, Save,
+// Reset, Enter and Esc move between the two; selecting another track or opening another album cancels.
 let editing = null;
 function analysisHTML(n, t, st, edge = '') {
   const f = G.S.fixes[n] || {}, ed = editing === n, edited = Object.keys(f).length;
@@ -266,7 +307,7 @@ function fixAction(act) {
 const missingVersions = t => (G.data.version_kinds || []).filter(k => !(t.versions || []).some(v => v.label === k));
 
 function renderPlayer() {
-  const t = E.cur && track(E.cur), playing = !E.paused() || !!G.gapTimer;
+  const t = E.cur && track(E.cur), playing = !E.paused() || seq.waiting();
   $('#playBtn').innerHTML = playing ? ICON.pause : ICON.play;
   $('#playBtn').setAttribute('aria-label', playing ? 'Pause' : 'Play');
   if (!t) { $('#npTitle').textContent = 'Nothing playing'; $('#npMeta').textContent = G.data ? 'Pick a track, or press Space' : ''; }
@@ -321,67 +362,56 @@ function drawMeter() {
   const [l, r] = E.meter(), w = db => clamp((db + 48) / 48, 0, 1) * 100 + '%';
   for (const [el, db] of [[$('#mL'), l], [$('#mR'), r]]) { el.style.width = w(db); el.className = db > -0.3 ? 'clip' : db > -3 ? 'hot' : ''; }
 }
-const drawAll = () => { if (G.loading) return; drawPlayer(); drawMini(); drawArcNow(); drawMeter(); };
-(function frame() { if (E.cur && (!E.paused() || G.gapTimer)) drawAll(); else drawMeter(); requestAnimationFrame(frame); })();
+const drawAll = () => { if (G.phase !== 'ready') return; drawPlayer(); drawMini(); drawArcNow(); drawMeter(); };
+(function frame() { if (E.cur && (!E.paused() || seq.waiting())) drawAll(); else drawMeter(); requestAnimationFrame(frame); })();
 addEventListener('resize', () => G.data && drawAll());
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => G.data && drawAll());
 
 // ───────────────────────────────────────────── transport
 function onChange(kind) {
-  if (!G.data || G.loading) return;
+  if (G.phase !== 'ready') return;
   if (['load', 'play', 'pause', 'side', 'match', 'mode', 'volume', 'error'].includes(kind)) renderPlayer();
   if (['load', 'play', 'pause'].includes(kind)) { markRows(); renderSide(); updateMedia(); }
   if (kind === 'load') { renderList(); if (G.sel === E.cur) renderInspector(); preloadNext(); }
   if (kind === 'pause') { rememberPosition(); save(); }
   if (kind === 'error') toast(`Couldn’t play ${pretty(E.cur)}. Is the file still there? Rebuild the data if it moved.`);
-  if (kind === 'preview-end') { $('#gapNote').hidden = true; renderPlayer(); }
+  if (kind === 'preview-end') seq.previewEnded();
   if (kind !== 'volume') drawAll();
 }
+// Start a song from the top (or `at`). Anything pending between songs is dropped: you've chosen what plays.
 function play(n, opts = {}) {
-  clearGap(); G.pending = null;
+  if (G.phase !== 'ready' || !track(n)) return false;
+  seq.reset();
   if (opts.select !== false) select(n, { scroll: true });
   E.load(n, { play: true, ...opts });
+  return true;
 }
+// Space, the play button and the media keys. Between songs, pausing holds the gap and playing goes straight on.
 function togglePlay() {
-  if (G.gapTimer) { clearGap(); renderPlayer(); return; }
+  if (seq.toggle()) return;
   if (!E.cur) { play(G.sel || G.S.order[0]); return; }
   E.toggle();
 }
+const resume = () => G.phase === 'ready' && (seq.resume() || (E.cur ? E.play() : togglePlay()));
+const pause = () => seq.pause() || E.pause();
 function step(d) {
   const i = G.S.order.indexOf(E.cur ?? G.sel), j = i + d;
   if (j >= 0 && j < G.S.order.length) play(G.S.order[j]);
 }
 // Keep the next song buffered on the engine's standby pair, so play-through and Next start instantly.
 function nextName() { const i = G.S.order.indexOf(E.cur); return i >= 0 && i < G.S.order.length - 1 ? G.S.order[i + 1] : null; }
-function preloadNext() { const n = G.pending?.next || nextName(); if (n) E.preload(n, null); }
+function preloadNext() { const n = seq.upcoming() || nextName(); if (n) E.preload(n, null); }
 // Gapless: with a 0 s gap, start the next song a hair before this one ends instead of waiting for 'ended'.
 setInterval(() => {
-  if (!E.cur || E.paused() || G.gapTimer || gap() > 0 || E.loop?.on) return;
-  const nx = G.pending?.kind === 'trans' ? G.pending.next : G.S.settings.cont ? nextName() : null;
-  if (nx && E.remaining() < 0.03) onEnded();
+  if (G.phase !== 'ready' || !E.cur || E.paused() || gap() > 0 || E.loop?.on) return;
+  if (seq.autoNext() && E.remaining() < 0.03) onEnded();
 }, 10);
-function clearGap() { clearTimeout(G.gapTimer); G.gapTimer = null; $('#gapNote').hidden = true; }
-function waitGapThen(fn, label) {
-  const g = gap();
-  if (g <= 0) return fn();
-  $('#gapNote').textContent = label; $('#gapNote').hidden = false;
-  G.gapTimer = setTimeout(() => { G.gapTimer = null; $('#gapNote').hidden = true; fn(); }, g * 1000);
-  renderPlayer();
-}
-function onEnded() {
-  const i = G.S.order.indexOf(E.cur);
-  if (G.pending?.kind === 'trans') {
-    const p = G.pending; G.pending = null;
-    return waitGapThen(() => { play(p.next); E.stopAt = p.len; $('#gapNote').textContent = 'transition preview'; $('#gapNote').hidden = false; }, `gap ${gap()} s…`);
-  }
-  if (G.S.settings.cont && i < G.S.order.length - 1) { const nx = G.S.order[i + 1]; waitGapThen(() => play(nx), `next: ${pretty(nx)}`); }
-  else renderPlayer();
-}
+function onEnded() { seq.ended(); }
 function previewTransition(i) {
   const a = G.S.order[i], b = G.S.order[i + 1], len = +G.S.settings.tlen;
+  if (!a || !b) return;
   play(a, { at: Math.max(0, track(a).dur - len) });
-  G.pending = { kind: 'trans', next: b, len }; preloadNext();
-  $('#gapNote').textContent = 'transition preview'; $('#gapNote').hidden = false;
+  seq.preview(b, len); preloadNext();
 }
 function setVersion(label) {
   const n = G.sel || E.cur; if (!n) return;
@@ -406,6 +436,7 @@ function setSide(s) { if (!showAB()) return; E.setSide(s); }
 function select(n, { scroll = false } = {}) {
   if (!n || !track(n)) return;
   const changed = n !== G.sel;
+  if (changed && editing) editing = null;          // correcting one track's analysis ends when you move to another
   G.sel = n; markRows();
   if (changed) { renderInspector(); drawArcNow(); syncHash(); }
   if (scroll) $(`.row[data-name="${CSS.escape(n)}"]`)?.scrollIntoView({ block: 'nearest' });
@@ -469,36 +500,59 @@ function rename(n = G.sel) {
 }
 
 // ───────────────────────────────────────────── jobs (making versions, exports) run by the server
-const JOBS = { list: [], status: {}, timer: null };
-const jobFor = (n, label) => JOBS.list.find(j => j.kind === 'make' && j.album === G.aid && ['queued', 'running'].includes(j.status) && (!j.tracks.length || j.tracks.includes(n)) && (!j.versions.length || j.versions.includes(label)));
+// Each job goes queued → running → done | error on the server, or 'gone' here if the server restarted under it
+// (jobwatch.mjs). The list is polled while any job is live; every finish is reported once, by finished().
+const JOBS = { list: [], timer: null, offline: false, waiters: new Map(), poll: 0 };
+const watch = createJobWatch();
+const jobFor = (n, label) => JOBS.list.find(j => j.kind === 'make' && j.album === G.aid && isLive(j) && (!j.tracks.length || j.tracks.includes(n)) && (!j.versions.length || j.versions.includes(label)));
 async function startJob(body) {
   try {
     const r = await api.post('/api/jobs', body), j = await r.json();
     if (!r.ok) return toast(`Couldn’t start that: ${j.error || r.status}`);
-    toast(j.kind === 'export' ? `${j.label}… progress is in the sidebar` : `${j.label}… progress is in the sidebar`);
+    watch.saw(j);
+    toast(`${j.label}… progress is in the sidebar`);
     pollJobs();
   } catch { toast('Couldn’t reach the GODMIX server'); }
+}
+// a job started elsewhere (Trace Tags' Check a leak): resolves with the job once it has finished, its status
+// 'done', 'error' or 'gone'
+function waitJob(j) {
+  return new Promise(resolve => { watch.saw(j); JOBS.waiters.set(j.id, resolve); pollJobs(); });
 }
 function makeVersions(tracks, versions) { if (DEMO) return needsInstall('Making versions'); startJob({ kind: 'make', album: G.aid, tracks, versions }); }
 async function pollJobs() {
   clearTimeout(JOBS.timer);
   if (DEMO) return;
-  try { JOBS.list = await api.json('/api/jobs'); } catch { return; }
-  for (const j of JOBS.list) {
-    const was = JOBS.status[j.id]; JOBS.status[j.id] = j.status;
-    if (!was || was === j.status || !['done', 'error'].includes(j.status)) continue;
-    if (j.kind === 'trace-check') continue;
-    if (j.status === 'error') toast(`${j.label} failed: ${j.error || 'see the server window'}`, { ms: 9000 });
-    else if (j.kind === 'make') { toast(j.msg); if (j.album === G.aid) reloadData(); }
-    else if (j.kind === 'album') {
-      toast(j.msg);
-      api.json('/api/albums').then(list => { G.albums = list; if (j.action === 'add' && j.result?.album) openAlbum(j.result.album); else if (j.album === G.aid) reloadData(); else renderSide(); });
-    }
-    else toast(j.msg, { action: 'Show folder', onAction: () => api.post('/api/open', { job: j.id }), ms: 9000 });
+  const n = ++JOBS.poll;                          // only the latest poll's answer counts; an older one arriving late is dropped
+  let list;
+  try { list = await api.json('/api/jobs'); }
+  catch {                                         // the server isn't answering: keep trying while a job was running
+    if (n !== JOBS.poll) return;
+    JOBS.offline = watch.live();
+    renderJobs();
+    if (JOBS.offline) JOBS.timer = setTimeout(pollJobs, 2000);
+    return;
   }
+  if (n !== JOBS.poll) return;
+  JOBS.list = list; JOBS.offline = false;
+  for (const { job, now } of watch.update(JOBS.list)) if (FINISHED.includes(now)) finished(job);
   renderJobs();
   updateMakeRows();
-  if (JOBS.list.some(j => ['queued', 'running'].includes(j.status))) JOBS.timer = setTimeout(pollJobs, 700);
+  if (JOBS.list.some(isLive)) JOBS.timer = setTimeout(pollJobs, 700);
+}
+// what a finished job means for the app: a toast, and new data or a new album where it made some
+function finished(j) {
+  const w = JOBS.waiters.get(j.id);
+  if (w) { JOBS.waiters.delete(j.id); return w(j); }
+  if (j.kind === 'trace-check') return;
+  if (j.status === 'gone') return toast(`${j.label} stopped: the GODMIX server was restarted. Start it again.`, { ms: 9000 });
+  if (j.status === 'error') return toast(`${j.label} failed: ${j.error || 'see the server window'}`, { ms: 9000 });
+  if (j.kind === 'make') { toast(j.msg); if (j.album === G.aid) reloadData(); }
+  else if (j.kind === 'album') {
+    toast(j.msg);
+    api.json('/api/albums').then(list => { G.albums = list; if (j.action === 'add' && j.result?.album) openAlbum(j.result.album); else if (j.album === G.aid) reloadData(); else if (G.phase === 'ready') renderSide(); }).catch(() => {});
+  }
+  else toast(j.msg, { action: 'Show folder', onAction: () => api.post('/api/open', { job: j.id }), ms: 9000 });
 }
 // refresh the "make it" rows in place (re-rendering the panel would steal focus from the notes)
 function updateMakeRows() {
@@ -509,18 +563,24 @@ function updateMakeRows() {
   });
 }
 function renderJobs() {
-  const live = JOBS.list.filter(j => ['queued', 'running'].includes(j.status));
+  const live = JOBS.list.filter(isLive);
   const el = $('#jobs');
   el.hidden = !live.length;
   el.innerHTML = live.map(j => `<div class="job"><div class="job-hd"><b>${esc(j.label)}</b><span class="mono">${j.status === 'queued' ? 'waiting' : Math.round(j.p * 100) + '%'}</span></div>
-    <div class="bar"><i style="width:${Math.round(j.p * 100)}%"></i></div><div class="job-msg">${esc(j.msg || '')}</div></div>`).join('');
+    <div class="bar"><i style="width:${Math.round(j.p * 100)}%"></i></div><div class="job-msg">${esc(JOBS.offline ? 'Can’t reach the GODMIX server. Is it still running?' : j.msg || '')}</div></div>`).join('');
 }
 // new versions landed: re-read this album's data without losing your place
 async function reloadData() {
-  const d = await api.json(`/data/${enc(G.aid)}.json`);
-  G.data = d; G.byName = {}; d.tracks.forEach(t => (G.byName[t.name] = t)); applyFixes();
-  if (E.ver) E.ver = track(E.cur)?.versions.find(v => v.label === E.ver.label) || E.ver;
-  try { G.albums = await api.json('/api/albums'); } catch {}
+  if (G.phase !== 'ready') return;
+  const ticket = G.ticket;
+  let d;
+  try { d = await api.json(`/data/${enc(G.aid)}.json`); } catch { return toast('Couldn’t re-read the album data. Reload the page.'); }
+  if (ticket !== G.ticket || G.phase !== 'ready') return;          // another album was opened meanwhile
+  G.data = d; G.byName = {}; d.tracks.forEach(t => (G.byName[t.name] = t)); G.defaultOrder = d.tracks.map(t => t.name); applyFixes();
+  G.S.order = G.S.order.filter(n => G.byName[n]); d.tracks.forEach(t => { if (!G.S.order.includes(t.name)) G.S.order.push(t.name); });
+  if (E.ver) E.ver = track(E.cur)?.versions?.find(v => v.label === E.ver.label) || E.ver;
+  try { const list = await api.json('/api/albums'); if (ticket === G.ticket) G.albums = list; } catch {}
+  if (ticket !== G.ticket || G.phase !== 'ready') return;
   renderSide(); renderHeader(); renderList(); renderInspector(); renderPlayer(); drawAll();
 }
 
@@ -592,7 +652,7 @@ function parseHash() { const m = /^#\/([^/]+)(?:\/(\d+))?/.exec(location.hash); 
 function syncHash() { const t = G.sel && track(G.sel); history.replaceState(null, '', `#/${enc(G.aid)}${t?.n ? '/' + t.n : ''}`); }
 addEventListener('hashchange', () => { const h = parseHash(); if (!h) return;
   if (h.aid !== G.aid && G.albums.some(a => a.id === h.aid)) openAlbum(h.aid, { trackN: h.n });
-  else if (h.n) { const t = G.data.tracks.find(x => String(x.n) === h.n); if (t) select(t.name, { scroll: true }); } });
+  else if (h.n && G.phase === 'ready') { const t = G.data.tracks.find(x => String(x.n) === h.n); if (t) select(t.name, { scroll: true }); } });
 function updateMedia() {
   if (!('mediaSession' in navigator) || !E.cur) return;
   navigator.mediaSession.metadata = new MediaMetadata({ title: pretty(E.cur) + (E.ver ? ` (${E.ver.label})` : ''), artist: G.data.artist || '',
@@ -600,7 +660,7 @@ function updateMedia() {
   navigator.mediaSession.playbackState = E.paused() ? 'paused' : 'playing';
 }
 if ('mediaSession' in navigator) {
-  const h = { play: () => E.play(), pause: () => E.pause(), previoustrack: () => step(-1), nexttrack: () => step(1),
+  const h = { play: () => resume(), pause: () => pause(), previoustrack: () => step(-1), nexttrack: () => step(1),
     seekto: e => E.seek(e.seekTime), seekbackward: () => E.nudge(-5), seekforward: () => E.nudge(5) };
   for (const [k, fn] of Object.entries(h)) try { navigator.mediaSession.setActionHandler(k, fn); } catch {}
 }
@@ -629,7 +689,7 @@ $('#list').addEventListener('click', e => {
   if (e.target.closest('input')) return;                     // renaming
   if (e.detail > 1) return;                                  // the second click of a double-click: don't undo the first
   // a click plays the song; clicking the one that's playing pauses or resumes it
-  if (n === E.cur && !G.gapTimer) { select(n); togglePlay(); } else play(n);
+  if (n === E.cur && !seq.between()) { select(n); togglePlay(); } else play(n);
   pressed(n, e);
 });
 // a short ripple from where you clicked, so it's clear the click did something
@@ -701,7 +761,8 @@ $('#albumNotes').addEventListener('input', e => { G.S.albumNotes = e.target.valu
 
 // player
 $('#playBtn').onclick = togglePlay;
-$('#prevBtn').onclick = () => (E.cur && E.bTime() > 3 ? E.seek(0) : step(-1));
+// back to the start of this song (or the one that just ended), or to the previous song in its first 3 s
+$('#prevBtn').onclick = () => (seq.between() ? play(E.cur) : E.cur && E.bTime() > 3 ? E.seek(0) : step(-1));
 $('#nextBtn').onclick = () => step(1);
 $('#ab').addEventListener('click', e => { const b = e.target.closest('[data-side]'); if (b) setSide(b.dataset.side); });
 $('#verSel').onchange = e => setVersion(e.target.value);
@@ -760,7 +821,7 @@ const app = {
     if (which === 'a') l.a = t; else l.b = t; E.setLoop(l.a, l.b); drawAll(); toast(`Loop ${fmt(E.loop.a)}–${fmt(E.loop.b)}`); },
   insp: () => PREFS.insp,
   rename, setTitle, startJob, makeVersions, save, missingVersions, api, editAlbum, addAlbum, exportDialog, traceDialog, demo: DEMO,
-  cur: () => E.cur, watchJobs: () => pollJobs(),
+  cur: () => E.cur, waitJob,
   togglePad: () => pad.toggle(), editAnalysis: () => { setInspector(true); fixAction('edit'); },
   downloadTracklist: () => downloadTracklist(app),
   makeAllMissing: () => {
@@ -770,4 +831,15 @@ const app = {
 };
 const pad = createNotepad(app);
 const cmd = initCommands(app);
+// For checking the app from the browser console (or an AI agent's browser): godmix.state() is every state
+// machine at once, as plain data; godmix.engine() is what the audio elements themselves are doing.
+window.godmix = {
+  state: () => ({
+    mode: DEMO ? 'demo' : 'local', phase: G.phase, album: G.aid, selected: G.sel, editing,
+    playing: E.cur ? { track: E.cur, version: E.ver?.label || '', side: E.side, paused: E.paused(), at: +E.songTime().toFixed(2), loop: E.loop && { ...E.loop } } : null,
+    between: seq.state,
+    jobs: JOBS.list.filter(isLive).map(j => ({ id: j.id, kind: j.kind, label: j.label, status: j.status, p: j.p })), serverLost: JOBS.offline,
+  }),
+  engine: () => E.debug(),
+};
 init().catch(err => { console.error(err); toast('GODMIX couldn’t start: ' + err.message, { ms: 8000 }); });
