@@ -28,7 +28,7 @@ const get = (p, h = {}) => fetch(base + p, { headers: h });
 const post = (p, body, h = { 'X-God-Mix': '1' }) => fetch(base + p, { method: 'POST', headers: { 'Content-Type': 'application/json', ...h }, body: JSON.stringify(body) });
 
 test('serves the homepage, the app and its static files', async () => {
-  for (const p of ['/', '/app', '/soon', '/css/app.css', '/js/app.js', '/assets/favicon.svg', '/manifest.webmanifest']) assert.equal((await get(p)).status, 200, p);
+  for (const p of ['/', '/app', '/css/app.css', '/js/app.js', '/assets/favicon.svg', '/manifest.webmanifest']) assert.equal((await get(p)).status, 200, p);
   assert.match((await get('/js/app.js')).headers.get('content-type'), /javascript/);
 });
 
@@ -137,4 +137,10 @@ test('answers only requests addressed to localhost (no DNS rebinding)', async ()
 
 test('the demo export starts a job, so it needs the header like every write', async () => {
   assert.equal((await get('/api/demo-export?fmt=mp3')).status, 403);
+});
+
+test('/soon, the old "coming soon" page, sends people to the setup steps', async () => {
+  const r = await fetch(base + '/soon', { redirect: 'manual' });
+  assert.equal(r.status, 301);
+  assert.equal(r.headers.get('location'), '/#setup');
 });

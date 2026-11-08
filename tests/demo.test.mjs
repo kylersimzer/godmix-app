@@ -79,5 +79,5 @@ test('the download is the prepared file, and nothing is made on request', async 
 });
 
 test('the pages are marked as the demo', async () => {
-  for (const p of ['/', '/app', '/soon']) assert.match(await (await get(p)).text(), /<html lang="en" class="demo">/, p);
+  for (const p of ['/', '/app']) assert.match(await (await get(p)).text(), /<html lang="en" class="demo">/, p);
 });

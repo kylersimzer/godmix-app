@@ -47,7 +47,7 @@ h1 { margin: 28px 0 0; font-size: clamp(44px, 6.4vw, 80px); line-height: 1.02; l
 .byline a:hover { color: var(--fg); }
 .byline + .ctas { margin-top: 30px; }
 .ctas { display: flex; gap: 12px; margin-top: 36px; flex-wrap: wrap; align-items: center; }
-/* the online demo (server.js --demo) says "Try GODMIX" and points to /soon; the installed app says "Open GODMIX" */
+/* the online demo (server.js --demo) says "Try GODMIX"; the installed app says "Open GODMIX" */
 html:not(.demo) .if-demo, .demo .if-local { display: none !important; }
 .ctas .note { font-family: var(--mono); font-size: 12px; color: var(--fg-4); margin-left: 8px; }
 .shot { position: relative; margin: 88px auto 0; max-width: 1240px; padding: 0 20px; perspective: 2400px; }
@@ -349,17 +349,3 @@ footer { border-top: 1px solid var(--line); padding: 56px 0 36px; font-size: 13.
 @media (max-width: 900px) { .foot-top { grid-template-columns: 1fr 1fr; } .foot-brand { grid-column: 1 / -1; } }
 @media (max-width: 480px) { .foot-top { grid-template-columns: 1fr; } .foot-bottom { flex-direction: column; } }
 
-/* ── /soon: the app isn't out yet; try the demo, or get in touch ── */
-.soon-page { min-height: 100vh; display: flex; flex-direction: column; }
-.soon-top { padding: 18px 0; }
-.soon-top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.soon { flex: 1; display: flex; align-items: center; padding: 64px 0 96px; position: relative; overflow: hidden; }
-.soon::before { content: ''; position: absolute; left: 50%; top: 40%; width: 1000px; height: 640px; transform: translate(-50%, -50%); background: radial-gradient(closest-side, rgba(var(--ink), 0.06), transparent); pointer-events: none; }
-.soon .wrap { position: relative; width: 100%; }
-.soon .mk-big { width: 96px; height: 32px; color: var(--accent); display: block; margin-bottom: 40px; }
-.soon h1 { margin-top: 18px; }
-.soon-contact { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); display: flex; align-items: baseline; gap: 18px; max-width: 620px; }
-.soon-contact .foot-mail { color: var(--fg-2); transition: color 0.15s; }
-.soon-contact .foot-mail:hover { color: var(--fg); }
-.soon-foot { border-top: 0; padding: 0 0 32px; }
-@media (max-width: 560px) { .soon-top .btn { display: none; } .soon { padding: 40px 0 72px; } }

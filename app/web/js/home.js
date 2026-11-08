@@ -45,7 +45,7 @@ function initEngine() {
 }
 // a missing version can be made from here: the page is local, like the app
 async function makeVersion(t, label, noteEl) {
-  if (ONLINE) { noteEl.textContent = `Making ${label} comes with the GODMIX app, coming soon.`; return; }
+  if (ONLINE) { noteEl.textContent = `Making ${label} comes with GODMIX on your own computer: free and open source.`; return; }
   try {
     const r = await fetch('/api/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-God-Mix': '1' }, body: JSON.stringify({ kind: 'make', album: DEMO, tracks: [t.name], versions: [label] }) });
     noteEl.textContent = r.ok ? `Making ${label} for ${t.title}… reload this page in a minute.` : 'Couldn’t start that. Is the server running?';

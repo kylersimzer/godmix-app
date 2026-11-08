@@ -26,10 +26,10 @@
 <header class="nav" id="nav">
   <div class="wrap">
     <a class="lockup" href="/" aria-label="GODMIX home"><svg><use href="#mark"/></svg>GODMIX</a>
-    <nav class="links" aria-label="Sections"><a href="#compare">Compare</a><a href="#sequence">Sequence</a><a href="#notes">Notes</a><a href="#keyboard">Keyboard</a><a href="#export">Export</a><a href="#new">New</a><a class="if-local" href="#setup">Setup</a><a class="if-demo" href="/soon">Coming soon</a></nav>
+    <nav class="links" aria-label="Sections"><a href="#compare">Compare</a><a href="#sequence">Sequence</a><a href="#notes">Notes</a><a href="#keyboard">Keyboard</a><a href="#export">Export</a><a href="#new">New</a><a href="#setup">Setup</a></nav>
     <span class="grow"></span>
     <label class="navvol" id="navVolWrap" hidden data-tip="Volume for the sounds on this page"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3H2.5z"/><path d="M11 5.5a3.5 3.5 0 010 5M12.8 3.5a6 6 0 010 9"/></svg><input type="range" id="navVol" min="0" max="1" step="0.01" aria-label="Volume"><span class="mono" id="navVolPct">60%</span></label>
-    <a class="btn line if-local" href="https://github.com/kylersimzer/godmix-app">GitHub</a>
+    <a class="btn line" href="https://github.com/kylersimzer/godmix-app">GitHub</a>
     <a class="btn solid" href="/app"><span class="if-local">Open GODMIX</span><span class="if-demo">Try GODMIX</span></a>
   </div>
 </header>
@@ -41,7 +41,7 @@
       <h1 class="rv">Hear every version<br>of the album.</h1>
       <p class="lede rv">GODMIX is a local listening room for <b>mastering and sequencing an album</b>. A/B every master and version in sync, hear every transition, and leave notes Claude can act on.</p>
       <p class="byline rv">By <a href="https://kylersimzer.com">Kyler Simzer</a></p>
-      <div class="ctas rv"><a class="btn solid big" href="/app"><span class="if-local">Open GODMIX</span><span class="if-demo">Try GODMIX</span> <kbd>↵</kbd></a><a class="btn line big if-local" href="#setup">Set it up</a><a class="btn line big if-demo" href="/soon">Coming soon</a><span class="note if-local">Runs on your machine · 127.0.0.1 only</span><span class="note if-demo">Try it here with 000 · the app for your own albums is coming soon</span></div>
+      <div class="ctas rv"><a class="btn solid big" href="/app"><span class="if-local">Open GODMIX</span><span class="if-demo">Try GODMIX</span> <kbd>↵</kbd></a><a class="btn line big" href="#setup"><span class="if-local">Set it up</span><span class="if-demo">Get it, free</span></a><span class="note if-local">Runs on your machine · 127.0.0.1 only</span><span class="note if-demo">Try it here with 000 · free and open source for your own albums</span></div>
     </div>
     <div class="shot" id="shot"><div class="frame"><img src="/assets/screens/app-dark.png" width="2880" height="1760" alt="The GODMIX app: albums in a sidebar, the running order with transitions, track details and the player"><div class="live" id="live" hidden></div></div></div>
     <p class="live-cap dim rv">The player is real. Pick a song, press play, flip to the slowed version.</p>
@@ -172,7 +172,7 @@
     </div>
   </section>
 
-  <section class="feature if-local" id="setup">
+  <section class="feature" id="setup">
     <div class="wrap">
       <div class="head rv"><div><span class="label">09 · Setup</span><h2>Three steps<br>to the room.</h2></div>
         <p>Node.js runs the app. Python measures the albums and makes the masters and versions. Nothing leaves your machine.</p></div>
@@ -220,7 +220,7 @@ npm start</pre>
       </div>
       <nav class="foot-col" aria-label="GODMIX">
         <h4 class="label">GODMIX</h4>
-        <a href="/app"><span class="if-local">Open the app</span><span class="if-demo">Try the app</span></a><a href="#new">What’s new</a><a class="if-local" href="#setup">Setup</a><a class="if-local" href="https://github.com/kylersimzer/godmix-app">GitHub</a><a class="if-demo" href="/soon">Coming soon</a>
+        <a href="/app"><span class="if-local">Open the app</span><span class="if-demo">Try the app</span></a><a href="#new">What’s new</a><a href="#setup">Setup</a><a href="https://github.com/kylersimzer/godmix-app">GitHub</a>
       </nav>
       <nav class="foot-col" aria-label="Kyler Simzer">
         <h4 class="label">Kyler Simzer</h4>

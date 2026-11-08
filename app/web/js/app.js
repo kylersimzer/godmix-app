@@ -41,8 +41,8 @@ const E = createEngine({ urlFor: audioUrl, track, onEnded, onChange });
 const saveNow = (keepalive = false) => G.aid && G.S && (DEMO ? store.set(`demo.${G.aid}`, G.S)
   : api.post(`/api/state?album=${enc(G.aid)}`, G.S, keepalive).catch(() => toast('Couldn’t save. Is the GODMIX server still running?')));
 // online, the things that need GODMIX on your own machine explain that instead of running
-const needsInstall = what => toast(`${what} comes with the GODMIX app for your own albums, coming soon.`,
-  { action: 'Learn more', onAction: () => (location.href = '/soon'), ms: 7000 });
+const needsInstall = what => toast(`${what} comes with GODMIX on your own computer: free and open source.`,
+  { action: 'Get GODMIX', onAction: () => (location.href = '/#setup'), ms: 7000 });
 const save = debounce(() => saveNow(), 400);
 function rememberPosition() { if (G.S && E.cur) G.S.last = { track: E.cur, t: +E.songTime().toFixed(2) }; }
 addEventListener('pagehide', () => { rememberPosition(); saveNow(true); });
